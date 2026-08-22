@@ -146,41 +146,41 @@ function ProformaView() {
       return;
     }
 
-    toast.info("Generando PDF de la proforma... Por favor, guárdelo en su dispositivo y adjúntelo en el chat de WhatsApp que se abrirá.", { duration: 5000 });
-
-    setTimeout(() => {
-      window.print();
-    }, 800);
-
-    setTimeout(() => {
-      const message = `Estimado(a) *${proformaData.clientName}*, le enviamos la proforma *${code}* correspondiente a su vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
+    const message = `Estimado(a) *${proformaData.clientName}*, le enviamos la proforma *${code}* correspondiente a su vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
 *Total:* Bs ${t.total.toFixed(2)}
 Puede ver el documento e imprimirlo en el siguiente enlace:
 ${proformaUrl}
 
 Muchas gracias por su preferencia. *IMAV Motors S.R.L.*`;
 
-      const encoded = encodeURIComponent(message);
-      window.open(`https://wa.me/${proformaData.clientPhone.replace(/\s+/g, "")}?text=${encoded}`, "_blank");
-    }, 2500);
+    const encoded = encodeURIComponent(message);
+    const cleanPhone = proformaData.clientPhone.replace(/\s+/g, "").replace(/\+/g, "");
+    const phoneWithCountry = cleanPhone.startsWith("591") || cleanPhone.length > 8 ? cleanPhone : `591${cleanPhone}`;
+
+    window.open(`https://wa.me/${phoneWithCountry}?text=${encoded}`, "_blank");
+
+    toast.info("Abriendo WhatsApp... Se abrirá el diálogo de impresión para generar el PDF.", { duration: 5000 });
+    setTimeout(() => {
+      window.print();
+    }, 1000);
   };
 
   const handleSendToManager = () => {
-    toast.info("Generando PDF de la proforma... Por favor, guárdelo en su dispositivo y adjúntelo en el chat de WhatsApp que se abrirá.", { duration: 5000 });
-
-    setTimeout(() => {
-      window.print();
-    }, 800);
-
-    setTimeout(() => {
-      const message = `Estimado Gerente, solicito su aprobación para la proforma *${code}* del cliente *${proformaData.clientName}* para el vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
+    const message = `Estimado Gerente, solicito su aprobación para la proforma *${code}* del cliente *${proformaData.clientName}* para el vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
 *Total Estimado:* Bs ${t.total.toFixed(2)}
 Por favor, revise y apruebe o rechace la proforma en el siguiente enlace:
 ${proformaUrl}`;
 
-      const encoded = encodeURIComponent(message);
-      window.open(`https://wa.me/${managerPhone}?text=${encoded}`, "_blank");
-    }, 2500);
+    const encoded = encodeURIComponent(message);
+    const cleanPhone = managerPhone.replace(/\s+/g, "").replace(/\+/g, "");
+    const phoneWithCountry = cleanPhone.startsWith("591") || cleanPhone.length > 8 ? cleanPhone : `591${cleanPhone}`;
+
+    window.open(`https://wa.me/${phoneWithCountry}?text=${encoded}`, "_blank");
+
+    toast.info("Abriendo WhatsApp... Se abrirá el diálogo de impresión para generar el PDF.", { duration: 5000 });
+    setTimeout(() => {
+      window.print();
+    }, 1000);
   };
 
   const handlePrint = () => {
@@ -282,17 +282,11 @@ ${proformaUrl}`;
               Enviar proforma final directamente al cliente al número <strong>{proformaData.clientPhone || "Sin Registrar"}</strong>.
             </p>
             <Button
-              className="mt-4 w-full"
-              disabled={proforma.estado !== "APROBADA"}
+              className="mt-4 w-full bg-[#25D366] text-white hover:bg-[#20BA56]"
               onClick={handleSendToClient}
             >
               <Send className="size-4 mr-2" /> Enviar al Cliente
             </Button>
-            {proforma.estado !== "APROBADA" && (
-              <p className="mt-2 text-center text-[10px] text-amber-500 font-medium">
-                * Requiere aprobación del Gerente antes de enviar al cliente.
-              </p>
-            )}
           </div>
         </div>
       </main>
