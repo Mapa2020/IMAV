@@ -39,6 +39,7 @@ interface Proforma {
   nombre_cliente: string;
   discount: number;
   taxRate: number;
+  numero_proforma?: number | null;
 }
 
 interface ServiceLine {
@@ -156,7 +157,7 @@ export function ProformaCRUD() {
         kind: l.kind,
       })),
       discount,
-      taxRate,
+      taxRate: 0,
       observaciones: obsText,
     };
 
@@ -221,7 +222,7 @@ export function ProformaCRUD() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute inset-y-0 left-3 my-auto size-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por código, placa, cliente o estado..."
+            placeholder="Buscar por código, placa, cliente, marca, modelo o estado..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -258,7 +259,7 @@ export function ProformaCRUD() {
             ) : (
               proformas.map((p) => {
                 const date = new Date(p.fecha_emision);
-                const code = `PF-${date.getFullYear()}-${String(p.id_proforma).padStart(4, "0")}`;
+                const code = `PF-${date.getFullYear()}-${String(p.numero_proforma || p.id_proforma).padStart(4, "0")}`;
                 return (
                   <TableRow key={p.id_proforma}>
                     <TableCell className="font-mono font-medium text-xs text-primary">
@@ -319,7 +320,7 @@ export function ProformaCRUD() {
 
       {/* Proforma Edit Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Detalles e Ítems de Proforma</DialogTitle>
           </DialogHeader>
@@ -334,7 +335,7 @@ export function ProformaCRUD() {
               </div>
 
               <div className="space-y-2 border border-border p-3 rounded-lg bg-surface-2/30">
-                <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1.5fr_0.5fr] gap-3 mb-1 px-1">
+                <div className="hidden sm:grid sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] gap-3 mb-1 px-1">
                   <span className="text-[10px] font-semibold label-caps">Descripción</span>
                   <span className="text-[10px] font-semibold label-caps text-right">Cant.</span>
                   <span className="text-[10px] font-semibold label-caps text-right">P. Unit.</span>
@@ -345,13 +346,22 @@ export function ProformaCRUD() {
                   <p className="text-center text-xs text-muted-foreground py-4">No hay líneas registradas en esta proforma</p>
                 )}
                 {lines.map((l) => (
-                  <div key={l.id} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1.5fr_0.5fr] gap-2 items-center border-b border-border sm:border-0 pb-3 sm:pb-0">
+                  <div key={l.id} className="grid grid-cols-1 sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] gap-2 items-center border-b border-border sm:border-0 pb-3 sm:pb-0">
                     <ItemAutocomplete
                       value={l.description}
                       token={token}
                       placeholder="Describa el servicio o repuesto..."
                       onChange={(desc, code, price, kind) => {
                         if (code) {
+                          const existingLine = lines.find(
+                            (line) => line.id !== l.id && line.code === code
+                          );
+                          if (existingLine) {
+                            updateLine(existingLine.id, { qty: existingLine.qty + l.qty });
+                            removeLine(l.id);
+                            toast.info(`El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`);
+                            return;
+                          }
                           updateLine(l.id, {
                             description: desc,
                             code: code,
@@ -401,26 +411,15 @@ export function ProformaCRUD() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="p-desc">Descuento (%)</Label>
-                <Input
-                  id="p-desc"
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="p-iva">IVA (%)</Label>
-                <Input
-                  id="p-iva"
-                  type="number"
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="p-desc">Descuento (%)</Label>
+              <Input
+                id="p-desc"
+                type="number"
+                value={discount}
+                onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                className="max-w-xs"
+              />
             </div>
 
             <div className="space-y-2">

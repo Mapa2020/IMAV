@@ -14,6 +14,10 @@ import {
   LogIn,
   Search,
   Calendar,
+  Package,
+  Users,
+  Database,
+  UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,12 +34,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, API_URL } from "@/hooks/useAuth";
 import { ItemAutocomplete } from "@/components/proforma/ItemAutocomplete";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Import CRUDs
 import { ClientCRUD } from "@/components/crud/ClientCRUD";
 import { VehicleCRUD } from "@/components/crud/VehicleCRUD";
 import { ReceptionCRUD } from "@/components/crud/ReceptionCRUD";
 import { ProformaCRUD } from "@/components/crud/ProformaCRUD";
+import { ItemCRUD } from "@/components/crud/ItemCRUD";
+import { EmployeeCRUD } from "@/components/crud/EmployeeCRUD";
+import { MaintenanceCRUD } from "@/components/crud/MaintenanceCRUD";
+import { UserCRUD } from "@/components/crud/UserCRUD";
 
 import {
   CHECKLIST,
@@ -99,7 +108,7 @@ const initial: Proforma = {
   notes: "",
   lines: [],
   discount: 0,
-  taxRate: 13,
+  taxRate: 0,
 };
 
 interface Client {
@@ -464,7 +473,7 @@ function Index() {
 
       {/* Barra superior */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between gap-6 px-5 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-[1650px] items-center justify-between gap-6 px-5 lg:px-8">
           <div className="flex items-center gap-3">
             <img src={logo} alt="IMAV Motor" width={40} height={40} className="size-[40px]" />
             <div className="leading-tight">
@@ -497,19 +506,69 @@ function Index() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1500px] px-5 py-8 lg:px-8">
+      <main className="mx-auto max-w-[1650px] px-5 py-8 lg:px-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
             <div>
               <h1 className="font-display text-3xl font-semibold tracking-tight">Panel de Gestión de Taller</h1>
               <p className="text-sm text-muted-foreground mt-1">Recepción, estimaciones y control de servicios.</p>
             </div>
-            <TabsList className="bg-muted/70 p-1">
+            <TabsList className="bg-muted/70 p-1 flex-wrap h-auto gap-y-1">
               <TabsTrigger value="proforma-flow">Nueva Proforma</TabsTrigger>
               <TabsTrigger value="proformas">Proformas</TabsTrigger>
               <TabsTrigger value="receptions">Recepciones</TabsTrigger>
               <TabsTrigger value="clients">Clientes</TabsTrigger>
               <TabsTrigger value="vehicles">Vehículos</TabsTrigger>
+              
+              <div className="w-[1px] h-5 bg-border mx-1 shrink-0 self-center hidden xs:block" />
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="items" className="px-2.5">
+                      <Package className="size-4" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Gestión de Items (Repuestos y Servicios)</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="employees" className="px-2.5">
+                      <Users className="size-4" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Gestión de Empleados</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {user?.rol === "ADMINISTRADOR" && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger value="maintenance" className="px-2.5">
+                          <Database className="size-4" />
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Mantenimiento y Respaldos</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger value="users" className="px-2.5">
+                          <UserCog className="size-4" />
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Gestión de Usuarios del Sistema</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
             </TabsList>
           </div>
 
@@ -522,7 +581,7 @@ function Index() {
               </div>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               {/* Formulario */}
               <section className="panel p-6 lg:p-7">
                 {step === 1 && (
@@ -871,7 +930,7 @@ function Index() {
                     </div>
 
                     <div className="space-y-3 mt-4">
-                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[2fr_1fr_1.5fr_1.5fr_0.5fr]">
+                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr]">
                         <span className="label-caps text-xs">Descripción</span>
                         <span className="label-caps text-xs text-right">Cant.</span>
                         <span className="label-caps text-xs text-right">P. Unit.</span>
@@ -888,7 +947,7 @@ function Index() {
                       {data.lines.map((l) => (
                         <div
                           key={l.id}
-                          className="grid gap-2 border-b border-border pb-3 sm:pb-0 sm:border-0 sm:grid-cols-[2fr_1fr_1.5fr_1.5fr_0.5fr] sm:items-center"
+                          className="grid gap-2 border-b border-border pb-3 sm:pb-0 sm:border-0 sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] sm:items-center"
                         >
                           <ItemAutocomplete
                             value={l.description}
@@ -896,6 +955,15 @@ function Index() {
                             placeholder="Descripción del servicio o repuesto"
                             onChange={(desc, code, price, kind) => {
                               if (code) {
+                                const existingLine = data.lines.find(
+                                  (line) => line.id !== l.id && line.code === code
+                                );
+                                if (existingLine) {
+                                  updateLine(existingLine.id, { qty: existingLine.qty + l.qty });
+                                  removeLine(l.id);
+                                  toast.info(`El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`);
+                                  return;
+                                }
                                 updateLine(l.id, {
                                   description: desc,
                                   code: code,
@@ -948,22 +1016,13 @@ function Index() {
                       </Button>
                     </div>
 
-                    <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
-                      <div>
+                    <div className="border-t border-border pt-5">
+                      <div className="max-w-xs">
                         <Label className="label-caps">Descuento (%)</Label>
                         <Input
                           type="number"
                           value={data.discount}
                           onChange={(e) => set("discount", Number(e.target.value) || 0)}
-                          className="font-mono mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label className="label-caps">IVA (%)</Label>
-                        <Input
-                          type="number"
-                          value={data.taxRate}
-                          onChange={(e) => set("taxRate", Number(e.target.value) || 0)}
                           className="font-mono mt-2"
                         />
                       </div>
@@ -1027,6 +1086,30 @@ function Index() {
           <TabsContent value="vehicles">
             <VehicleCRUD />
           </TabsContent>
+
+          {/* TAB 6: Items de Taller */}
+          <TabsContent value="items">
+            <ItemCRUD />
+          </TabsContent>
+
+          {/* TAB 7: Empleados */}
+          <TabsContent value="employees">
+            <EmployeeCRUD />
+          </TabsContent>
+
+          {/* TAB 8: Mantenimiento y Respaldos (Solo Administrador) */}
+          {user?.rol === "ADMINISTRADOR" && (
+            <TabsContent value="maintenance">
+              <MaintenanceCRUD />
+            </TabsContent>
+          )}
+
+          {/* TAB 9: Usuarios (Solo Administrador) */}
+          {user?.rol === "ADMINISTRADOR" && (
+            <TabsContent value="users">
+              <UserCRUD />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 

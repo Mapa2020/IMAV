@@ -83,9 +83,9 @@ router.get("/", protect, async (req: AuthenticatedRequest, res: Response): Promi
         proformaIdSearch = parseInt(match[1], 10);
       }
 
-      sql += ` WHERE v.placa LIKE ? OR c.nombre LIKE ? OR p.estado LIKE ?`;
+      sql += ` WHERE v.placa LIKE ? OR c.nombre LIKE ? OR p.estado LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ?`;
       const searchTerm = `%${query}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
 
       if (proformaIdSearch !== null && !isNaN(proformaIdSearch)) {
         sql += ` OR p.id_proforma = ?`;
@@ -242,10 +242,18 @@ router.post(
         taxRate: Number(taxRate) || 0,
       });
 
-      // 3. Insertar la proforma
+      // 3. Obtener el número correlativo para el año actual
+      const currentYear = new Date().getFullYear();
+      const [maxNumResult] = await connection.query(
+        "SELECT MAX(numero_proforma) as max_num FROM proformas WHERE YEAR(fecha_emision) = ?",
+        [currentYear]
+      );
+      const nextNum = ((maxNumResult as any[])[0]?.max_num || 0) + 1;
+
+      // 4. Insertar la proforma
       const [proformaResult] = await connection.query(
-        "INSERT INTO proformas (id_ingreso, estado, monto_total, observaciones) VALUES (?, ?, ?, ?)",
-        [id_ingreso, estado || "PENDIENTE", totalAmount, obsJson]
+        "INSERT INTO proformas (id_ingreso, estado, monto_total, observaciones, numero_proforma) VALUES (?, ?, ?, ?, ?)",
+        [id_ingreso, estado || "PENDIENTE", totalAmount, obsJson, nextNum]
       );
       const idProforma = (proformaResult as any).insertId;
 

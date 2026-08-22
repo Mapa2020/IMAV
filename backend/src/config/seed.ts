@@ -93,6 +93,18 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo ejecutar ALTER TABLE para clientes.nombre:", alterErr);
     }
 
+    // Asegurar que la tabla proformas tenga la columna numero_proforma para el reinicio anual
+    try {
+      const [columns] = await connection.query("SHOW COLUMNS FROM proformas LIKE 'numero_proforma'");
+      if ((columns as any[]).length === 0) {
+        console.log("Agregando la columna 'numero_proforma' a la tabla proformas...");
+        await connection.query("ALTER TABLE proformas ADD COLUMN numero_proforma INT DEFAULT NULL");
+        console.log("Columna 'numero_proforma' agregada con éxito.");
+      }
+    } catch (err: any) {
+      console.warn("No se pudo verificar o agregar numero_proforma a la tabla proformas:", err.message);
+    }
+
     // 2. Sembrar Empleados si no existen
     const [empleados] = await connection.query("SELECT COUNT(*) as count FROM empleados");
     if ((empleados as any)[0].count === 0) {

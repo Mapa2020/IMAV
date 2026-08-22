@@ -48,7 +48,7 @@ function ProformaView() {
   useEffect(() => {
     if (proforma) {
       const year = new Date(proforma.fecha_emision).getFullYear();
-      const padId = String(proforma.id_proforma).padStart(4, "0");
+      const padId = String(proforma.numero_proforma || proforma.id_proforma).padStart(4, "0");
       document.title = `IMAV_PF-${year}-${padId}`;
     }
     return () => {
@@ -130,7 +130,7 @@ function ProformaView() {
     taxRate: proforma.taxRate || 13,
   };
 
-  const code = `PF-${new Date(proforma.fecha_emision).getFullYear()}-${String(proforma.id_proforma).padStart(4, "0")}`;
+  const code = `PF-${new Date(proforma.fecha_emision).getFullYear()}-${String(proforma.numero_proforma || proforma.id_proforma).padStart(4, "0")}`;
   const t = totals(proformaData);
 
   // Enlaces de WhatsApp
@@ -257,7 +257,7 @@ ${proformaUrl}`;
         </div>
 
         {/* Visualización del documento proforma */}
-        <div className="shadow-lg border border-border rounded-xl bg-card">
+        <div className="shadow-lg border border-border rounded-xl bg-card print:shadow-none print:border-none print:rounded-none print:bg-transparent">
           <ProformaDocument data={proformaData} code={code} />
         </div>
 

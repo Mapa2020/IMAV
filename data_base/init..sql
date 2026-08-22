@@ -168,6 +168,7 @@ CREATE TABLE `proformas` (
   `estado` enum('PENDIENTE','APROBADA','RECHAZADA') COLLATE utf8mb4_unicode_ci DEFAULT 'PENDIENTE',
   `monto_total` decimal(10,2) DEFAULT '0.00',
   `observaciones` text COLLATE utf8mb4_unicode_ci,
+  `numero_proforma` int DEFAULT NULL,
   PRIMARY KEY (`id_proforma`),
   KEY `id_ingreso` (`id_ingreso`),
   CONSTRAINT `proformas_ibfk_1` FOREIGN KEY (`id_ingreso`) REFERENCES `ingresos_taller` (`id_ingreso`) ON DELETE RESTRICT ON UPDATE CASCADE

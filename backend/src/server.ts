@@ -9,6 +9,9 @@ import receptionRoutes from "./routes/ingresos.js";
 import proformaRoutes from "./routes/proformas.js";
 import employeeRoutes from "./routes/empleados.js";
 import itemRoutes from "./routes/items.js";
+import backupRoutes from "./routes/backups.js";
+import userRoutes from "./routes/usuarios.js";
+import { startBackupScheduler } from "./config/backupScheduler.js";
 
 dotenv.config();
 
@@ -25,6 +28,9 @@ app.use(express.json());
 // Check and Seed Database
 dbInitAndSeed();
 
+// Start Backup Scheduler (Runs checks on startup and every 24h, doing backup/cleanup every 30 days)
+startBackupScheduler();
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
@@ -33,6 +39,8 @@ app.use("/api/receptions", receptionRoutes);
 app.use("/api/proformas", proformaRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/items", itemRoutes);
+app.use("/api/backups", backupRoutes);
+app.use("/api/users", userRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

@@ -68,6 +68,5 @@ export const totals = (p: Proforma) => {
   const subtotal = p.lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
   const discount = (subtotal * p.discount) / 100;
   const taxable = subtotal - discount;
-  const tax = (taxable * p.taxRate) / 100;
-  return { subtotal, discount, tax, total: taxable + tax };
+  return { subtotal, discount, tax: 0, total: taxable };
 };
