@@ -126,6 +126,9 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
+          [data-sonner-toaster], .sonner-toast, [class*="sonner-"] {
+            display: none !important;
+          }
         }
       `}} />
 
