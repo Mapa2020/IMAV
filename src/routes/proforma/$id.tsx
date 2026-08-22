@@ -140,47 +140,95 @@ function ProformaView() {
   // WhatsApp del Gerente (Fijo según especificación)
   const managerPhone = "+59175020162";
 
+  const sendWhatsApp = (phone: string, text: string) => {
+    const cleanPhone = phone.replace(/\s+/g, "").replace(/\+/g, "");
+    const phoneWithCountry = cleanPhone.startsWith("591") || cleanPhone.length > 8 ? cleanPhone : `591${cleanPhone}`;
+    const encoded = encodeURIComponent(text);
+
+    const protocolUrl = `whatsapp://send?phone=${phoneWithCountry}&text=${encoded}`;
+    const webUrl = `https://web.whatsapp.com/send?phone=${phoneWithCountry}&text=${encoded}`;
+
+    let hasBlurred = false;
+    const handleBlur = () => {
+      hasBlurred = true;
+      window.removeEventListener("blur", handleBlur);
+    };
+    window.addEventListener("blur", handleBlur);
+
+    // Intentar abrir la app nativa de escritorio
+    window.location.href = protocolUrl;
+
+    // Timeout de fallback para mostrar opción de WhatsApp Web si no se detectó foco perdido (no tiene la app)
+    setTimeout(() => {
+      window.removeEventListener("blur", handleBlur);
+      if (!hasBlurred) {
+        toast.info(
+          <span>
+            Intentando abrir la aplicación de escritorio. Si no abre, puedes{" "}
+            <a
+              href={webUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-bold text-[#25D366] hover:text-[#20BA56]"
+            >
+              abrir WhatsApp Web aquí
+            </a>.
+          </span>,
+          { duration: 10000 }
+        );
+      } else {
+        toast.success("Se abrió la aplicación de WhatsApp de escritorio.");
+      }
+    }, 1200);
+  };
+
   const handleSendToClient = () => {
     if (!proformaData.clientPhone) {
       toast.error("El cliente no tiene un teléfono registrado");
       return;
     }
 
-    const message = `Estimado(a) *${proformaData.clientName}*, le enviamos la proforma *${code}* correspondiente a su vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
+    toast.info("Abriendo el diálogo de impresión para guardar el PDF... Al finalizar, se abrirá WhatsApp.");
+
+    const onAfterPrint = () => {
+      window.removeEventListener("afterprint", onAfterPrint);
+      
+      const message = `Estimado(a) *${proformaData.clientName}*, le enviamos la proforma *${code}* correspondiente a su vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
 *Total:* Bs ${t.total.toFixed(2)}
 Puede ver el documento e imprimirlo en el siguiente enlace:
 ${proformaUrl}
 
 Muchas gracias por su preferencia. *IMAV Motors S.R.L.*`;
 
-    const encoded = encodeURIComponent(message);
-    const cleanPhone = proformaData.clientPhone.replace(/\s+/g, "").replace(/\+/g, "");
-    const phoneWithCountry = cleanPhone.startsWith("591") || cleanPhone.length > 8 ? cleanPhone : `591${cleanPhone}`;
+      sendWhatsApp(proformaData.clientPhone, message);
+    };
 
-    window.open(`https://wa.me/${phoneWithCountry}?text=${encoded}`, "_blank");
-
-    toast.info("Abriendo WhatsApp... Se abrirá el diálogo de impresión para generar el PDF.", { duration: 5000 });
+    window.addEventListener("afterprint", onAfterPrint);
+    
     setTimeout(() => {
       window.print();
-    }, 1000);
+    }, 800);
   };
 
   const handleSendToManager = () => {
-    const message = `Estimado Gerente, solicito su aprobación para la proforma *${code}* del cliente *${proformaData.clientName}* para el vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
+    toast.info("Abriendo el diálogo de impresión para guardar el PDF... Al finalizar, se abrirá WhatsApp.");
+
+    const onAfterPrint = () => {
+      window.removeEventListener("afterprint", onAfterPrint);
+      
+      const message = `Estimado Gerente, solicito su aprobación para la proforma *${code}* del cliente *${proformaData.clientName}* para el vehículo *${proformaData.brand} ${proformaData.model}* (Placa: ${proformaData.plate}).
 *Total Estimado:* Bs ${t.total.toFixed(2)}
 Por favor, revise y apruebe o rechace la proforma en el siguiente enlace:
 ${proformaUrl}`;
 
-    const encoded = encodeURIComponent(message);
-    const cleanPhone = managerPhone.replace(/\s+/g, "").replace(/\+/g, "");
-    const phoneWithCountry = cleanPhone.startsWith("591") || cleanPhone.length > 8 ? cleanPhone : `591${cleanPhone}`;
+      sendWhatsApp(managerPhone, message);
+    };
 
-    window.open(`https://wa.me/${phoneWithCountry}?text=${encoded}`, "_blank");
-
-    toast.info("Abriendo WhatsApp... Se abrirá el diálogo de impresión para generar el PDF.", { duration: 5000 });
+    window.addEventListener("afterprint", onAfterPrint);
+    
     setTimeout(() => {
       window.print();
-    }, 1000);
+    }, 800);
   };
 
   const handlePrint = () => {
