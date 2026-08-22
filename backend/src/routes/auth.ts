@@ -5,7 +5,7 @@ import pool from "../config/db.js";
 import { protect, AuthenticatedRequest } from "../middleware/authMiddleware.js";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey_imav_motor_2026";
+const JWT_SECRET = process.env.JWT_SECRET || "God_whit_imav_motor_2026";
 
 // @desc    Auth user & get token
 // @route   POST /api/auth/login

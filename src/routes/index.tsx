@@ -63,13 +63,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Recepción de vehículos y generación de proformas profesionales para IMAV Motor S.R.L. Registro, checklist, detalle de servicios y envío al cliente por WhatsApp.",
+          "Ingreso de vehículos y generación de proformas profesionales para IMAV Motor S.R.L. Registro, checklist, detalle de servicios y envío al cliente por WhatsApp.",
       },
       { property: "og:title", content: "IMAV Motor S.R.L." },
       {
         property: "og:description",
         content:
-          "Sistema de recepción de vehículos y proformas para taller mecánico: registro, checklist y envío al cliente por WhatsApp.",
+          "Sistema de ingreso de vehículos y proformas para taller mecánico: registro, checklist y envío al cliente por WhatsApp.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/")({
 const STEPS: Step[] = [
   { id: 1, label: "Cliente", hint: "Datos de contacto" },
   { id: 2, label: "Vehículo", hint: "Ingreso y registro" },
-  { id: 3, label: "Recepción", hint: "Checklist y responsables" },
+  { id: 3, label: "Ingreso", hint: "Checklist y responsables" },
   { id: 4, label: "Proforma", hint: "Servicios y costos" },
 ];
 
@@ -511,12 +511,12 @@ function Index() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
             <div>
               <h1 className="font-display text-3xl font-semibold tracking-tight">Panel de Gestión de Taller</h1>
-              <p className="text-sm text-muted-foreground mt-1">Recepción, estimaciones y control de servicios.</p>
+              <p className="text-sm text-muted-foreground mt-1">Ingreso, estimaciones y control de servicios.</p>
             </div>
             <TabsList className="bg-muted/70 p-1 flex-wrap h-auto gap-y-1">
               <TabsTrigger value="proforma-flow">Nueva Proforma</TabsTrigger>
               <TabsTrigger value="proformas">Proformas</TabsTrigger>
-              <TabsTrigger value="receptions">Recepciones</TabsTrigger>
+              <TabsTrigger value="receptions">Ingresos</TabsTrigger>
               <TabsTrigger value="clients">Clientes</TabsTrigger>
               <TabsTrigger value="vehicles">Vehículos</TabsTrigger>
               
@@ -800,7 +800,7 @@ function Index() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                        <ClipboardCheck className="size-4 text-primary" /> Recepción en taller
+                        <ClipboardCheck className="size-4 text-primary" /> Ingreso en taller
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
                         Quién recibe, qué mecánico se asigna y estado general de ingreso.

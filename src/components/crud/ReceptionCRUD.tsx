@@ -179,11 +179,11 @@ export function ReceptionCRUD() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.message || "Error al actualizar la recepción");
+        toast.error(data.message || "Error al actualizar el ingreso");
         return;
       }
 
-      toast.success("Recepción actualizada");
+      toast.success("Ingreso actualizado");
       setIsOpen(false);
       fetchReceptions();
     } catch (err) {
@@ -193,11 +193,11 @@ export function ReceptionCRUD() {
 
   const handleDelete = async (id: number) => {
     if (!isAdmin) {
-      toast.error("Solo el administrador puede eliminar recepciones");
+      toast.error("Solo el administrador puede eliminar ingresos");
       return;
     }
 
-    if (!confirm("¿Está seguro de eliminar esta recepción? Esto fallará si tiene proformas asociadas.")) {
+    if (!confirm("¿Está seguro de eliminar este ingreso? Esto fallará si tiene proformas asociadas.")) {
       return;
     }
 
@@ -210,11 +210,11 @@ export function ReceptionCRUD() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.message || "Error al eliminar la recepción");
+        toast.error(data.message || "Error al eliminar el ingreso");
         return;
       }
 
-      toast.success("Recepción eliminada");
+      toast.success("Ingreso eliminado");
       fetchReceptions();
     } catch (err) {
       toast.error("Error al conectar con el servidor");
@@ -255,13 +255,13 @@ export function ReceptionCRUD() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                  Cargando recepciones...
+                  Cargando ingresos...
                 </TableCell>
               </TableRow>
             ) : receptions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                  No se encontraron recepciones.
+                  No se encontraron ingresos.
                 </TableCell>
               </TableRow>
             ) : (
@@ -320,7 +320,7 @@ export function ReceptionCRUD() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Editar Recepción — Placa {editingRec?.placa}</DialogTitle>
+            <DialogTitle>Editar Ingreso — Placa {editingRec?.placa}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -360,7 +360,7 @@ export function ReceptionCRUD() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label>Estado de Recepción</Label>
+                <Label>Estado de Ingreso</Label>
                 <Select value={estado} onValueChange={setEstado}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione estado" />

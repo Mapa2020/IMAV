@@ -9,13 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Database, 
-  Trash2, 
-  Download, 
-  RefreshCw, 
-  Clock, 
-  FileSpreadsheet, 
+import {
+  Database,
+  Trash2,
+  Download,
+  RefreshCw,
+  Clock,
+  FileSpreadsheet,
   Info,
   Calendar,
   AlertTriangle,
@@ -134,8 +134,7 @@ export function MaintenanceCRUD() {
             <div>
               <h3 className="font-semibold text-lg leading-snug">Mantenimiento de Datos y Respaldos</h3>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                El sistema optimiza automáticamente el rendimiento y almacenamiento de la base de datos aplicando una política de retención de <strong>365 días calendarios</strong>. 
-                Las proformas de más de un año y sus registros asociados (recepciones/ingresos) se eliminan permanentemente.
+                El sistema optimiza automáticamente el rendimiento y almacenamiento de la base de datos aplicando una política de retención.
               </p>
             </div>
           </div>
@@ -157,11 +156,11 @@ export function MaintenanceCRUD() {
           <div>
             <h4 className="font-semibold text-sm label-caps">Acción Manual</h4>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Fuerza la creación inmediata de una copia de seguridad y limpia la base de datos de proformas con más de 365 días de antigüedad.
+              Fuerza la creación inmediata de una copia de seguridad.
             </p>
           </div>
 
-          <Button 
+          <Button
             className="w-full bg-primary text-primary-foreground flex items-center justify-center gap-2 mt-4"
             onClick={handleRunCleanup}
             disabled={actionLoading}
