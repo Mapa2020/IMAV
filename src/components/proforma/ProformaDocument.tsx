@@ -1,4 +1,5 @@
 import { ReactNode, useRef, useState, useEffect } from "react";
+import { Phone, Mail } from "lucide-react";
 import { currency, totals, type Proforma } from "./proforma";
 import boschLogo from "@/assets/Bosch.png";
 import gacLogo from "@/assets/gac.png";
@@ -142,7 +143,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     <div className="flex items-start justify-between gap-6">
                       <div>
                         <div className="font-display flex items-baseline gap-1.5 leading-none text-[#41424C]">
-                          <span className="text-4xl font-black tracking-tighter" style={{ textShadow: "1px 0 0 #41424C, -1px 0 0 #41424C", fontWeight: 950 }}>IMAV</span>
+                          <span className="text-4xl font-black tracking-wider" style={{ textShadow: "1px 0 0 #41424C, -1px 0 0 #41424C", fontWeight: 950 }}>IMAV</span>
                           <span className="text-lg font-black tracking-wider ml-1" style={{ textShadow: "0.5px 0 0 #41424C, -0.5px 0 0 #41424C", fontWeight: 950 }}>MOTOR S.R.L.</span>
                         </div>
                         <p className="text-[9px] uppercase tracking-widest text-[#666666] font-bold mt-[2px] leading-none">
@@ -170,20 +171,30 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                   </div>
 
                   {/* Dirección y Fecha/Cotización */}
-                  <div className="px-8 pt-5 pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 text-paper-muted">
-                    <p className="text-[10px] leading-[1.2] flex-1">
+                  <div className="px-8 pt-5 pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 text-slate-700">
+                    <p className="text-[11px] leading-[1.4] flex-1 font-medium">
                       Av. 4to Anillo No 4135 entre 3 pasos al Frente y Radial 10
                       <br />
-                      Telf: +591 75020160 · Santa Cruz - Bolivia
+                      <span className="inline-flex items-center gap-1 align-middle">
+                        <Phone className="size-3 text-[#B87333] shrink-0" />
+                        <span>+591 75020160</span>
+                      </span>
+                      <span className="mx-2 text-slate-400">·</span>
+                      <span className="inline-flex items-center gap-1 align-middle">
+                        <Mail className="size-3 text-[#B87333] shrink-0" />
+                        <span>imavmotors@gmail.com</span>
+                      </span>
+                      <span className="mx-2 text-slate-400">·</span>
+                      <span>Santa Cruz - Bolivia</span>
                       <br />
                       Servicio Integral Automotriz
                     </p>
-                    <div className="text-right sm:text-right shrink-0 flex flex-col gap-0.5">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#B87333] leading-none">
+                    <div className="text-right sm:text-right shrink-0 flex flex-col gap-1">
+                      <p className="text-lg font-bold uppercase tracking-[0.2em] text-[#B87333] leading-none">
                         Cotización
                       </p>
-                      <p className="font-mono text-base font-bold text-black leading-none">{code}</p>
-                      <p className="text-[10px] font-mono text-paper-muted leading-none mt-[1px]">
+                      <p className="font-mono text-lg font-bold text-black leading-none">{code}</p>
+                      <p className="text-xs font-mono text-slate-700 leading-none mt-[2px]">
                         Fecha Emisión: {data.entryDate || "—"}
                       </p>
                     </div>
@@ -195,20 +206,44 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
             <tbody className="proforma-tbody">
               <tr className="proforma-tr">
                 <td className="proforma-td p-0 border-none">
-                  {/* Fila 1: Cliente (Línea completa) */}
-                  <div className="border-b border-paper-border px-8 py-2.5 print:py-2 avoid-break">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted mb-0.5">
-                      Cliente
-                    </p>
-                    <p className="text-sm font-semibold text-paper-foreground">
-                      {data.clientName}
-                    </p>
+                  {/* Fila 1: Cliente, Teléfono y CI/NIT */}
+                  <div className="border-b border-slate-300 px-8 pt-2.5 pb-1.5 print:pt-2 print:pb-1 avoid-break flex justify-between items-end">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                        Cliente
+                      </p>
+                      <p className="text-sm font-semibold text-paper-foreground">
+                        {data.clientName}
+                      </p>
+                    </div>
+                    <div className="flex gap-8">
+                      {data.clientPhone && (
+                        <div className="text-right sm:text-left">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                            Teléfono
+                          </p>
+                          <p className="text-sm font-mono font-medium text-paper-foreground">
+                            {data.clientPhone}
+                          </p>
+                        </div>
+                      )}
+                      {data.clientDoc && (
+                        <div className="text-right">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                            CI / NIT
+                          </p>
+                          <p className="text-sm font-mono font-medium text-paper-foreground">
+                            {data.clientDoc}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Fila 2: Datos del Vehículo */}
-                  <div className="grid gap-4 sm:gap-6 px-8 py-2.5 print:py-2 sm:grid-cols-3 border-b border-paper-border/50 avoid-break">
+                  <div className="grid gap-4 sm:gap-6 px-8 pt-1.5 pb-2.5 print:pt-1 print:pb-2 sm:grid-cols-3 border-b border-slate-300/80 avoid-break">
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted mb-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                         Placa
                       </p>
                       <p className="text-sm font-mono font-bold text-paper-foreground">
@@ -216,7 +251,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted mb-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                         Marca / Modelo
                       </p>
                       <p className="text-sm font-semibold text-paper-foreground">
@@ -225,7 +260,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     </div>
                     {data.vin && (
                       <div>
-                        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted mb-0.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                           VIN / Chasis
                         </p>
                         <p className="text-sm font-mono text-paper-foreground">
@@ -239,23 +274,23 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                   <div className="px-8 mt-4">
                     <table className="w-full border-collapse text-sm">
                       <thead>
-                        <tr className="border-y border-paper-border text-[10px] uppercase tracking-[0.14em] text-paper-muted">
-                          <th className="py-1.5 print:py-1 text-left font-medium">Descripción</th>
-                          <th className="w-16 py-1.5 print:py-1 text-right font-medium">Cant.</th>
-                          <th className="w-28 py-1.5 print:py-1 text-right font-medium">P. Unit.</th>
-                          <th className="w-28 py-1.5 print:py-1 text-right font-medium">Importe</th>
+                        <tr className="border-y border-slate-300 text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                          <th className="py-1.5 print:py-1 text-left font-semibold">Descripción</th>
+                          <th className="w-16 py-1.5 print:py-1 text-right font-semibold">Cant.</th>
+                          <th className="w-28 py-1.5 print:py-1 text-right font-semibold">P. Unit.</th>
+                          <th className="w-28 py-1.5 print:py-1 text-right font-semibold">Importe</th>
                         </tr>
                       </thead>
                       <tbody>
                         {data.lines.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-xs text-paper-muted">
+                            <td colSpan={4} className="py-8 text-center text-xs text-slate-500">
                               Aún no se han agregado servicios ni repuestos.
                             </td>
                           </tr>
                         )}
                         {data.lines.map((l) => (
-                          <tr key={l.id} className="border-b border-paper-border/70 align-top">
+                          <tr key={l.id} className="border-b border-slate-300/70 align-top">
                             <td className="py-1.5 print:py-1 pr-4 text-[11px] sm:text-xs print:text-[10px]">
                               <span className="font-mono font-bold text-paper-foreground mr-4">
                                 {l.code || "S/C"}
@@ -277,8 +312,8 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
 
                   {/* Observaciones (si las hay) */}
                   {data.complaint && (
-                    <div className="mx-8 mt-4 mb-2 rounded-lg border border-paper-border bg-paper-border/25 px-4 py-2 print:py-1.5 avoid-break">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted">
+                    <div className="mx-8 mt-4 mb-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 print:py-1.5 avoid-break">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Observaciones
                       </p>
                       <p className="mt-0.5 text-xs sm:text-sm leading-relaxed">{data.complaint}</p>
@@ -288,7 +323,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                   {/* Literal y Totales */}
                   <div className="flex flex-col sm:flex-row justify-between items-start px-8 pt-5 gap-4 avoid-break">
                     {/* Literal en letras (a la izquierda) */}
-                    <div className="text-[11px] text-paper-foreground font-semibold uppercase sm:mt-10 self-end max-w-md border-b border-paper-border/80 pb-1 w-full sm:w-auto">
+                    <div className="text-[11px] text-paper-foreground font-semibold uppercase sm:mt-10 self-end max-w-md border-b border-slate-350 pb-1 w-full sm:w-auto">
                       {numberToWords(t.total)}
                     </div>
 
@@ -298,7 +333,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                       {data.discount > 0 && (
                         <Total k={`Descuento (${data.discount}%)`} v={`- ${currency(t.discount)}`} />
                       )}
-                      <div className="mt-2 flex items-baseline justify-between border-t border-paper-foreground/20 pt-2.5">
+                      <div className="mt-2 flex items-baseline justify-between border-t border-slate-300 pt-2.5">
                         <dt className="text-[11px] font-medium uppercase tracking-[0.16em]">Total Bs</dt>
                         <dd className="font-mono text-xl font-semibold">{currency(t.total)}</dd>
                       </div>
@@ -312,11 +347,11 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
               <tr className="proforma-tr">
                 <td className="proforma-td p-0 border-none">
                   {/* Pie de página con especialidades */}
-                  <div className="mt-8 border-t border-paper-border px-8 py-6 text-center avoid-break">
-                    <p className="text-[10px] sm:text-[11px] leading-relaxed text-paper-muted max-w-4xl mx-auto font-medium">
-                      Mecánica general — Mantenimiento preventivo y correctivo — Inyección electrónica — Electricidad automotriz
+                  <div className="mt-8 border-t border-slate-300 px-7 py-6 text-center avoid-break">
+                    <p className="text-[8.5px] sm:text-[9.5px] print:text-[8.5px] leading-normal text-slate-600 max-w-4xl mx-auto font-medium tracking-tight">
+                      Mecánica General - Mantenimiento Preventivo y Correctivo - Diagnóstico Computarizado - Inyección Electrónica - Electricidad Automotriz
                       <br />
-                      Diagnóstico computarizado — Alineación y Convergencia — Balanceo y Montaje — Frenos ABS/ESP — Suspensión — Transmisión — Tornería.
+                      Reparación de Motores - Cajas de Transmisión - Suspensión y Dirección - Frenos ABS/ESP - Alineación y Convergencia - Balanceo y Montaje.
                     </p>
                   </div>
                 </td>
@@ -325,13 +360,13 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
           </table>
 
           {/* Lado Derecho: Columna vertical de logos de marcas de autos */}
-          <div className="w-12 border-l border-paper-border bg-paper flex flex-col items-center justify-between py-6 px-1.5 shrink-0 print:flex">
+          <div className="w-12 border-l border-slate-300 bg-paper flex flex-col items-center justify-between py-6 px-1.5 shrink-0 print:flex">
             {CAR_BRANDS.map((b) => (
               <img
                 key={b.name}
                 src={b.logo}
                 alt={b.name}
-                className="size-6 object-contain opacity-90 grayscale hover:grayscale-0 transition-all duration-300"
+                className="size-8 object-contain opacity-95 grayscale hover:grayscale-0 print:grayscale-0 print:opacity-100 transition-all duration-300"
                 title={b.name}
               />
             ))}
@@ -346,7 +381,7 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-paper-muted">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
         {title}
       </p>
       <dl className="space-y-1">{children}</dl>
@@ -357,7 +392,7 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 function Row({ k, v, mono }: { k: string; v?: string; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 text-xs">
-      <dt className="shrink-0 text-paper-muted">{k}</dt>
+      <dt className="shrink-0 text-slate-500">{k}</dt>
       <dd className={`truncate text-right font-medium ${mono ? "font-mono" : ""}`}>{v || "—"}</dd>
     </div>
   );
@@ -366,18 +401,18 @@ function Row({ k, v, mono }: { k: string; v?: string; mono?: boolean }) {
 function Total({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-baseline justify-between text-xs">
-      <dt className="text-paper-muted">{k}</dt>
+      <dt className="text-slate-500">{k}</dt>
       <dd className="font-mono">{v}</dd>
     </div>
   );
 }
 
 function numberToWords(num: number): string {
-  if (num === 0) return "Son: CERO 00/100 Bs.";
+  if (num === 0) return "Son: CERO 00/100, Bs.";
 
   const temp = Math.floor(num);
   const cents = Math.round((num - temp) * 100);
-  const centsStr = String(cents).padStart(2, "0") + "/100 Bs.";
+  const centsStr = String(cents).padStart(2, "0") + "/100, Bs.";
 
   const unidades = ["", "UN", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE"];
   const decenas = ["", "DIEZ", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA"];
