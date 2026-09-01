@@ -52,7 +52,7 @@ function ProformaView() {
       document.title = `IMAV_PF-${year}-${padId}`;
     }
     return () => {
-      document.title = "IMAV Motor S.R.L.";
+      document.title = "IMAV Motors S.R.L.";
     };
   }, [proforma]);
 
@@ -248,7 +248,7 @@ ${proformaUrl}`;
           </Link>
           <div className="flex items-center gap-2">
             <img src={logo} alt="IMAV Motor" className="size-8" />
-            <span className="font-display font-semibold tracking-wider text-sm">IMAV MOTOR S.R.L.</span>
+            <span className="font-display font-semibold tracking-wider text-sm">IMAV MOTORS S.R.L.</span>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint}>

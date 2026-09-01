@@ -51,7 +51,7 @@ function Login() {
         <div className="mb-8 text-center">
           <img src={logo} alt="IMAV Motor" className="mx-auto size-16" />
           <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            IMAV MOTOR S.R.L.
+            IMAV MOTORS S.R.L.
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Sistema de Recepción y Proformas
@@ -135,7 +135,7 @@ function Login() {
         </div>
 
         <footer className="mt-8 text-center text-xs text-muted-foreground">
-          IMAV Motor S.R.L. · ParionaSoft © 2026
+          IMAV Motors S.R.L. · ParionaSoft © 2026
         </footer>
       </div>
     </div>

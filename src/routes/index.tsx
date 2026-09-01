@@ -71,7 +71,7 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "IMAV Motor S.R.L." },
+      { title: "IMAV Motors S.R.L." },
       {
         name: "description",
         content:
@@ -536,7 +536,7 @@ function Index() {
             />
             <div className="leading-tight">
               <p className="font-display text-lg font-semibold tracking-[0.14em]">
-                IMAV MOTOR S.R.L.
+                IMAV MOTORS S.R.L.
               </p>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Servicio Automotriz
@@ -1342,7 +1342,7 @@ function Index() {
       </main>
 
       <footer className="mt-16 border-t border-border py-6 text-center text-xs text-muted-foreground">
-        IMAV Motor S.R.L. · Santa Cruz, Bolivia · ParionaSoft. Todos los
+        IMAV Motors S.R.L. · Santa Cruz, Bolivia · ParionaSoft. Todos los
         derechos Reservados
       </footer>
     </div>

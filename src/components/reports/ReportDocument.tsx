@@ -3,6 +3,7 @@ import { Phone, Mail } from "lucide-react";
 import boschLogo from "@/assets/Bosch.png";
 import gacLogo from "@/assets/gac.png";
 import gwLogo from "@/assets/gw.png";
+import kiaLogo from "@/assets/kia.png";
 
 export interface TechnicalReport {
   id_informe?: number;
@@ -76,10 +77,7 @@ const CAR_BRANDS = [
     name: "Hyundai",
     logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/hyundai.png",
   },
-  {
-    name: "Kia",
-    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/kia.png",
-  },
+  { name: "Kia", logo: kiaLogo },
   {
     name: "Fiat",
     logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/fiat.png",
@@ -312,7 +310,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
                               fontWeight: 950,
                             }}
                           >
-                            MOTOR S.R.L.
+                            MOTORS S.R.L.
                           </span>
                         </div>
                         <p className="text-[9px] uppercase tracking-widest text-[#666666] font-bold mt-[2px] leading-none">

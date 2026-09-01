@@ -4,6 +4,7 @@ import { currency, totals, type Proforma } from "./proforma";
 import boschLogo from "@/assets/Bosch.png";
 import gacLogo from "@/assets/gac.png";
 import gwLogo from "@/assets/gw.png";
+import kiaLogo from "@/assets/kia.png";
 
 export function ProformaDocument({
   data,
@@ -170,7 +171,7 @@ export function ProformaDocument({
                               fontWeight: 950,
                             }}
                           >
-                            MOTOR S.R.L.
+                            MOTORS S.R.L.
                           </span>
                         </div>
                         <p className="text-[9px] uppercase tracking-widest text-[#666666] font-bold mt-[2px] leading-none">
@@ -429,9 +430,8 @@ export function ProformaDocument({
 
                   {/* Pie de página con especialidades */}
                   <div
-                    className={`border-t border-slate-300 px-7 py-6 text-center avoid-break ${
-                      data.complaint ? "mt-3" : "mt-8"
-                    }`}
+                    className={`border-t border-slate-300 px-7 py-6 text-center avoid-break ${data.complaint ? "mt-3" : "mt-8"
+                      }`}
                   >
                     <p className="text-[8.5px] sm:text-[9.5px] print:text-[8.5px] leading-normal text-slate-600 max-w-4xl mx-auto font-medium tracking-tight">
                       Mecánica General - Mantenimiento Preventivo y Correctivo -
@@ -674,10 +674,7 @@ const CAR_BRANDS = [
     name: "Hyundai",
     logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/hyundai.png",
   },
-  {
-    name: "Kia",
-    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/kia.png",
-  },
+  { name: "Kia", logo: kiaLogo },
   {
     name: "Fiat",
     logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/fiat.png",

@@ -46,10 +46,10 @@ function ReportView() {
 
   useEffect(() => {
     if (report) {
-      document.title = `${report.numero_informe} - IMAV Motor`;
+      document.title = `${report.numero_informe} - IMAV Motors`;
     }
     return () => {
-      document.title = "IMAV Motor S.R.L.";
+      document.title = "IMAV Motors S.R.L.";
     };
   }, [report]);
 
