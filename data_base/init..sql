@@ -155,6 +155,23 @@ CREATE TABLE `items_taller` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `explicaciones_items`
+--
+
+DROP TABLE IF EXISTS `explicaciones_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `explicaciones_items` (
+  `id_explicacion` int NOT NULL AUTO_INCREMENT,
+  `id_item` int NOT NULL,
+  `descripcion_detallada` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id_explicacion`),
+  UNIQUE KEY `uq_item_explicacion` (`id_item`),
+  CONSTRAINT `fk_explicacion_item` FOREIGN KEY (`id_item`) REFERENCES `items_taller` (`id_item`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `proformas`
 --
 
@@ -207,6 +224,38 @@ CREATE TABLE `servicios` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `marcas_vehiculo`
+--
+
+DROP TABLE IF EXISTS `marcas_vehiculo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `marcas_vehiculo` (
+  `id_marca` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id_marca`),
+  UNIQUE KEY `uq_marca_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `modelos_vehiculo`
+--
+
+DROP TABLE IF EXISTS `modelos_vehiculo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `modelos_vehiculo` (
+  `id_modelo` int NOT NULL AUTO_INCREMENT,
+  `id_marca` int NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id_modelo`),
+  UNIQUE KEY `uq_marca_modelo` (`id_marca`, `nombre`),
+  CONSTRAINT `fk_modelos_marca` FOREIGN KEY (`id_marca`) REFERENCES `marcas_vehiculo` (`id_marca`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `vehiculos`
 --
 
@@ -225,6 +274,46 @@ CREATE TABLE `vehiculos` (
   UNIQUE KEY `uq_placa` (`placa`),
   KEY `id_cliente` (`id_cliente`),
   CONSTRAINT `vehiculos_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id_cliente`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Table structure for table `informes_tecnicos`
+--
+
+DROP TABLE IF EXISTS `informes_tecnicos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `informes_tecnicos` (
+  `id_informe` int NOT NULL AUTO_INCREMENT,
+  `id_vehiculo` int NOT NULL,
+  `id_cliente` int NOT NULL,
+  `id_ingreso` int DEFAULT NULL,
+  `id_empleado` int DEFAULT NULL,
+  `numero_informe` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fecha` date NOT NULL,
+  `ciudad` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Santa Cruz',
+  `destinatario_nombre` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `destinatario_atencion` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vehiculo_descripcion` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `placa` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kilometraje` int DEFAULT NULL,
+  `referencia` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contenido` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conclusion` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `costo_estimado` decimal(10,2) DEFAULT NULL,
+  `firmante_nombre` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'IMAV MOTORS S.R.L.',
+  `firmante_cargo` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Servicio Integral Automotriz',
+  `estado` enum('BORRADOR','EMITIDO','ANULADO') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EMITIDO',
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_informe`),
+  KEY `fk_informe_vehiculo` (`id_vehiculo`),
+  KEY `fk_informe_cliente` (`id_cliente`),
+  KEY `fk_informe_ingreso` (`id_ingreso`),
+  KEY `fk_informe_empleado` (`id_empleado`),
+  CONSTRAINT `fk_inf_vehiculo` FOREIGN KEY (`id_vehiculo`) REFERENCES `vehiculos` (`id_vehiculo`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inf_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id_cliente`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inf_ingreso` FOREIGN KEY (`id_ingreso`) REFERENCES `ingresos_taller` (`id_ingreso`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_inf_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleados` (`id_empleado`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -21,7 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, Eye, Edit2, Trash2, Plus, Trash } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { currency } from "../proforma/proforma";
 import { ItemAutocomplete } from "../proforma/ItemAutocomplete";
@@ -49,6 +55,7 @@ interface ServiceLine {
   qty: number;
   unitPrice: number;
   kind: "labor" | "part";
+  detalle?: string;
 }
 
 export function ProformaCRUD() {
@@ -56,21 +63,26 @@ export function ProformaCRUD() {
   const navigate = useNavigate();
   const [proformas, setProformas] = useState<Proforma[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [loading, setLoading] = useState(true);
 
-  // Edit Modal State
+  // Modal edit state
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [lines, setLines] = useState<ServiceLine[]>([]);
-  const [discount, setDiscount] = useState(0);
-  const [taxRate, setTaxRate] = useState(13);
-  const [obsText, setObsText] = useState("");
+  const [discount, setDiscount] = useState<number>(0);
+  const [taxRate, setTaxRate] = useState<number>(13);
+  const [obsText, setObsText] = useState<string>("");
 
   const fetchProformas = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/proformas?query=${encodeURIComponent(search)}`, {
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      let url = `${API_URL}/proformas`;
+      if (search.trim()) {
+        url += `?query=${encodeURIComponent(search.trim())}`;
+      }
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
@@ -78,6 +90,7 @@ export function ProformaCRUD() {
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error al cargar proformas");
     } finally {
       setLoading(false);
     }
@@ -92,10 +105,10 @@ export function ProformaCRUD() {
       toast.error("Debe iniciar sesión para realizar cambios");
       return;
     }
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await fetch(`${API_URL}/proformas/${prof.id_proforma}`, {
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -104,7 +117,12 @@ export function ProformaCRUD() {
       setDiscount(data.discount || 0);
       setTaxRate(data.taxRate || 13);
       setObsText(data.observaciones || "");
-      setLines(data.lines || []);
+
+      const loadedLines = (data.lines || []).map((l: ServiceLine) => ({
+        ...l,
+        detalle: l.detalle || "",
+      }));
+      setLines(loadedLines);
       setIsOpen(true);
     } catch (e) {
       toast.error("Error al cargar detalles de proforma");
@@ -113,23 +131,22 @@ export function ProformaCRUD() {
     }
   };
 
-  const addLine = () => {
+  const addLine = (preset?: Partial<ServiceLine>) => {
     setLines((prev) => [
       ...prev,
       {
         id: Math.random().toString(),
-        description: "",
-        qty: 1,
-        unitPrice: 0,
-        kind: "labor",
+        description: preset?.description ?? "",
+        qty: preset?.qty ?? 1,
+        unitPrice: preset?.unitPrice ?? 0,
+        kind: preset?.kind ?? "labor",
+        detalle: preset?.detalle ?? "",
       },
     ]);
   };
 
   const updateLine = (id: string, patch: Partial<ServiceLine>) => {
-    setLines((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, ...patch } : l))
-    );
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   };
 
   const removeLine = (id: string) => {
@@ -166,7 +183,7 @@ export function ProformaCRUD() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(bodyData),
       });
@@ -192,14 +209,16 @@ export function ProformaCRUD() {
       return;
     }
 
-    if (!confirm("¿Está seguro de eliminar esta proforma de forma permanente?")) {
+    if (
+      !confirm("¿Está seguro de eliminar esta proforma de forma permanente?")
+    ) {
       return;
     }
 
     try {
       const res = await fetch(`${API_URL}/proformas/${id}`, {
         method: "DELETE",
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       const data = await res.json();
@@ -246,13 +265,19 @@ export function ProformaCRUD() {
           <TableBody>
             {loading && proformas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   Cargando proformas...
                 </TableCell>
               </TableRow>
             ) : proformas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No se encontraron proformas.
                 </TableCell>
               </TableRow>
@@ -267,18 +292,22 @@ export function ProformaCRUD() {
                     </TableCell>
                     <TableCell>{date.toLocaleDateString("es-BO")}</TableCell>
                     <TableCell>{p.nombre_cliente}</TableCell>
-                    <TableCell className="font-mono text-xs font-semibold">{p.placa} ({p.marca} {p.modelo})</TableCell>
+                    <TableCell className="font-mono text-xs font-semibold">
+                      {p.placa} ({p.marca} {p.modelo})
+                    </TableCell>
                     <TableCell className="font-mono font-medium text-xs">
                       Bs {currency(Number(p.monto_total))}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                        p.estado === "APROBADA"
-                          ? "bg-success/15 text-success"
-                          : p.estado === "RECHAZADA"
-                            ? "bg-destructive/15 text-destructive"
-                            : "bg-warning/15 text-warning"
-                      }`}>
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                          p.estado === "APROBADA"
+                            ? "bg-success/15 text-success"
+                            : p.estado === "RECHAZADA"
+                              ? "bg-destructive/15 text-destructive"
+                              : "bg-warning/15 text-warning"
+                        }`}
+                      >
                         {p.estado}
                       </span>
                     </TableCell>
@@ -286,7 +315,9 @@ export function ProformaCRUD() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate({ to: `/proforma/${p.id_proforma}` })}
+                        onClick={() =>
+                          navigate({ to: `/proforma/${p.id_proforma}` })
+                        }
                         title="Ver Documento"
                       >
                         <Eye className="size-4 text-muted-foreground" />
@@ -305,9 +336,13 @@ export function ProformaCRUD() {
                         size="icon"
                         onClick={() => handleDelete(p.id_proforma)}
                         disabled={!isAdmin}
-                        title={isAdmin ? "Eliminar" : "Eliminar (Solo Administrador)"}
+                        title={
+                          isAdmin ? "Eliminar" : "Eliminar (Solo Administrador)"
+                        }
                       >
-                        <Trash2 className={`size-4 ${isAdmin ? "text-destructive" : "text-muted-foreground/40"}`} />
+                        <Trash2
+                          className={`size-4 ${isAdmin ? "text-destructive" : "text-muted-foreground/40"}`}
+                        />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -320,7 +355,7 @@ export function ProformaCRUD() {
 
       {/* Proforma Edit Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Detalles e Ítems de Proforma</DialogTitle>
           </DialogHeader>
@@ -328,84 +363,138 @@ export function ProformaCRUD() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label className="label-caps">Detalle de Líneas de Estimación</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addLine}>
-                  <Plus className="size-4 mr-1" /> Agregar Línea
-                </Button>
+                <Label className="label-caps">
+                  Detalle de Líneas de Estimación
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addLine()}
+                  >
+                    <Plus className="size-4 mr-1" /> Agregar Ítem
+                  </Button>
+                </div>
               </div>
 
-              <div className="space-y-2 border border-border p-3 rounded-lg bg-surface-2/30">
-                <div className="hidden sm:grid sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] gap-3 mb-1 px-1">
-                  <span className="text-[10px] font-semibold label-caps">Descripción</span>
-                  <span className="text-[10px] font-semibold label-caps text-right">Cant.</span>
-                  <span className="text-[10px] font-semibold label-caps text-right">P. Unit.</span>
-                  <span className="text-[10px] font-semibold label-caps">Tipo</span>
+              <div className="space-y-2.5 border border-border p-3 rounded-lg bg-surface-2/30">
+                <div className="hidden sm:grid sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] gap-3 mb-1 px-1">
+                  <span className="text-[10px] font-semibold label-caps">
+                    Descripción
+                  </span>
+                  <span className="text-[10px] font-semibold label-caps text-right">
+                    Cant.
+                  </span>
+                  <span className="text-[10px] font-semibold label-caps text-right">
+                    P. Unit.
+                  </span>
+                  <span className="text-[10px] font-semibold label-caps">
+                    Tipo
+                  </span>
                   <span />
                 </div>
                 {lines.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground py-4">No hay líneas registradas en esta proforma</p>
+                  <p className="text-center text-xs text-muted-foreground py-4">
+                    No hay líneas registradas en esta proforma
+                  </p>
                 )}
                 {lines.map((l) => (
-                  <div key={l.id} className="grid grid-cols-1 sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] gap-2 items-center border-b border-border sm:border-0 pb-3 sm:pb-0">
-                    <ItemAutocomplete
-                      value={l.description}
-                      token={token}
-                      placeholder="Describa el servicio o repuesto..."
-                      onChange={(desc, code, price, kind) => {
-                        if (code) {
-                          const existingLine = lines.find(
-                            (line) => line.id !== l.id && line.code === code
-                          );
-                          if (existingLine) {
-                            updateLine(existingLine.id, { qty: existingLine.qty + l.qty });
-                            removeLine(l.id);
-                            toast.info(`El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`);
-                            return;
+                  <div
+                    key={l.id}
+                    className="p-2.5 rounded-md border border-border/70 bg-card/40 space-y-2"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] gap-2 items-center">
+                      <ItemAutocomplete
+                        value={l.description}
+                        token={token}
+                        placeholder="Describa el servicio o repuesto..."
+                        onChange={(desc, code, price, kind, detalle) => {
+                          if (code) {
+                            const existingLine = lines.find(
+                              (line) => line.id !== l.id && line.code === code,
+                            );
+                            if (existingLine) {
+                              updateLine(existingLine.id, {
+                                qty: existingLine.qty + l.qty,
+                              });
+                              removeLine(l.id);
+                              toast.info(
+                                `El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`,
+                              );
+                              return;
+                            }
+                            updateLine(l.id, {
+                              description: desc,
+                              code: code,
+                              unitPrice: price,
+                              kind: kind,
+                              detalle: detalle || l.detalle || "",
+                            });
+                          } else {
+                            updateLine(l.id, { description: desc });
                           }
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        value={l.qty}
+                        onChange={(e) =>
                           updateLine(l.id, {
-                            description: desc,
-                            code: code,
-                            unitPrice: price,
-                            kind: kind,
-                          });
-                        } else {
-                          updateLine(l.id, { description: desc });
+                            qty: Number(e.target.value) || 0,
+                          })
                         }
-                      }}
-                    />
-                    <Input
-                      type="number"
-                      value={l.qty}
-                      onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) || 0 })}
-                      className="text-right"
-                    />
-                    <Input
-                      type="number"
-                      value={l.unitPrice}
-                      onChange={(e) => updateLine(l.id, { unitPrice: Number(e.target.value) || 0 })}
-                      className="text-right"
-                    />
-                    <Select
-                      value={l.kind}
-                      onValueChange={(val: any) => updateLine(l.id, { kind: val })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="labor">Servicio</SelectItem>
-                        <SelectItem value="part">Repuesto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeLine(l.id)}
-                      className="text-destructive"
-                    >
-                      <Trash className="size-4" />
-                    </Button>
+                        className="text-right px-2"
+                      />
+                      <Input
+                        type="number"
+                        value={l.unitPrice}
+                        onChange={(e) =>
+                          updateLine(l.id, {
+                            unitPrice: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="text-right"
+                      />
+                      <Select
+                        value={l.kind}
+                        onValueChange={(val: "labor" | "part") =>
+                          updateLine(l.id, { kind: val })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="labor">Servicio</SelectItem>
+                          <SelectItem value="part">Repuesto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeLine(l.id)}
+                        className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+
+                    {/* Explicación del item */}
+                    <div className="flex items-center gap-2 pl-1 pt-1 border-t border-border/40">
+                      <span className="text-[10px] font-semibold text-foreground/80 shrink-0">
+                        ↳ Explicación:
+                      </span>
+                      <Input
+                        value={l.detalle || ""}
+                        onChange={(e) =>
+                          updateLine(l.id, { detalle: e.target.value })
+                        }
+                        placeholder="Explicación o mayor detalle del ítem (opcional)..."
+                        className="h-7 text-xs bg-background/50 text-foreground placeholder:text-muted-foreground/60"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -434,12 +523,14 @@ export function ProformaCRUD() {
             </div>
 
             <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">
-                Guardar Cambios
-              </Button>
+              <Button type="submit">Guardar Cambios</Button>
             </DialogFooter>
           </form>
         </DialogContent>

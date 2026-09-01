@@ -14,10 +14,12 @@ router.get("/", protect, async (req: AuthenticatedRequest, res: Response): Promi
     let sql = `
       SELECT i.id_item, i.codigo, i.descripcion, i.tipo_item,
              COALESCE(s.precio_base, r.precio_venta, 0) as precio,
-             r.stock_actual
+             r.stock_actual,
+             ei.descripcion_detallada as detalle
       FROM items_taller i
       LEFT JOIN servicios s ON i.id_item = s.id_item
       LEFT JOIN repuestos r ON i.id_item = r.id_item
+      LEFT JOIN explicaciones_items ei ON i.id_item = ei.id_item
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -56,10 +58,12 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
     const sql = `
       SELECT i.id_item, i.codigo, i.descripcion, i.tipo_item,
              COALESCE(s.precio_base, r.precio_venta, 0) as precio,
-             r.stock_actual
+             r.stock_actual,
+             ei.descripcion_detallada as detalle
       FROM items_taller i
       LEFT JOIN servicios s ON i.id_item = s.id_item
       LEFT JOIN repuestos r ON i.id_item = r.id_item
+      LEFT JOIN explicaciones_items ei ON i.id_item = ei.id_item
       WHERE i.id_item = ?
     `;
     const [rows] = await pool.query(sql, [id]);
@@ -84,7 +88,7 @@ router.post(
   protect,
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const { codigo, descripcion, tipo_item, precio, stock_actual } = req.body;
+    const { codigo, descripcion, tipo_item, precio, stock_actual, detalle } = req.body;
 
     if (!codigo || !descripcion || !tipo_item || precio === undefined) {
       res.status(400).json({ message: "Código, descripción, tipo y precio son requeridos" });
@@ -131,6 +135,14 @@ router.post(
         );
       }
 
+      // 3. Insertar explicación/detalle si se especificó
+      if (detalle && String(detalle).trim()) {
+        await connection.query(
+          "INSERT INTO explicaciones_items (id_item, descripcion_detallada) VALUES (?, ?)",
+          [newId, String(detalle).trim()]
+        );
+      }
+
       await connection.commit();
       connection.release();
 
@@ -138,10 +150,12 @@ router.post(
       const [newRow] = await pool.query(
         `SELECT i.id_item, i.codigo, i.descripcion, i.tipo_item,
                 COALESCE(s.precio_base, r.precio_venta, 0) as precio,
-                r.stock_actual
+                r.stock_actual,
+                ei.descripcion_detallada as detalle
          FROM items_taller i
          LEFT JOIN servicios s ON i.id_item = s.id_item
          LEFT JOIN repuestos r ON i.id_item = r.id_item
+         LEFT JOIN explicaciones_items ei ON i.id_item = ei.id_item
          WHERE i.id_item = ?`,
         [newId]
       );
@@ -164,7 +178,7 @@ router.put(
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { codigo, descripcion, tipo_item, precio, stock_actual } = req.body;
+    const { codigo, descripcion, tipo_item, precio, stock_actual, detalle } = req.body;
 
     if (!codigo || !descripcion || !tipo_item || precio === undefined) {
       res.status(400).json({ message: "Código, descripción, tipo y precio son requeridos" });
@@ -218,7 +232,6 @@ router.put(
         }
       } else {
         // Cambió el tipo (de REPUESTO a SERVICIO o viceversa)
-        // Ojo: Validar primero si no viola FK. Si ya está en detalles_proforma, es mejor bloquear el cambio de tipo
         const [detalles] = await connection.query("SELECT COUNT(*) as count FROM detalles_proforma WHERE id_item = ?", [id]);
         if ((detalles as any)[0].count > 0) {
           res.status(400).json({ message: "No se puede cambiar el tipo de item porque está registrado en una o más proformas" });
@@ -244,16 +257,31 @@ router.put(
         }
       }
 
+      // 3. Gestionar explicación / detalle extendido
+      if (detalle !== undefined) {
+        const trimmed = String(detalle).trim();
+        if (trimmed) {
+          await connection.query(
+            "INSERT INTO explicaciones_items (id_item, descripcion_detallada) VALUES (?, ?) ON DUPLICATE KEY UPDATE descripcion_detallada = VALUES(descripcion_detallada)",
+            [id, trimmed]
+          );
+        } else {
+          await connection.query("DELETE FROM explicaciones_items WHERE id_item = ?", [id]);
+        }
+      }
+
       await connection.commit();
       connection.release();
 
       const [updatedRow] = await pool.query(
         `SELECT i.id_item, i.codigo, i.descripcion, i.tipo_item,
                 COALESCE(s.precio_base, r.precio_venta, 0) as precio,
-                r.stock_actual
+                r.stock_actual,
+                ei.descripcion_detallada as detalle
          FROM items_taller i
          LEFT JOIN servicios s ON i.id_item = s.id_item
          LEFT JOIN repuestos r ON i.id_item = r.id_item
+         LEFT JOIN explicaciones_items ei ON i.id_item = ei.id_item
          WHERE i.id_item = ?`,
         [id]
       );

@@ -30,6 +30,7 @@ interface Item {
   tipo_item: "REPUESTO" | "SERVICIO";
   precio: number;
   stock_actual: number | null;
+  detalle?: string | null;
 }
 
 export function ItemCRUD() {
@@ -49,6 +50,7 @@ export function ItemCRUD() {
   const [tipo, setTipo] = useState<"REPUESTO" | "SERVICIO">("SERVICIO");
   const [precio, setPrecio] = useState("");
   const [stock, setStock] = useState("");
+  const [detalle, setDetalle] = useState("");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -88,6 +90,7 @@ export function ItemCRUD() {
     setTipo("SERVICIO");
     setPrecio("");
     setStock("0");
+    setDetalle("");
     setIsOpen(true);
   };
 
@@ -102,6 +105,7 @@ export function ItemCRUD() {
     setTipo(item.tipo_item);
     setPrecio(item.precio.toString());
     setStock(item.stock_actual?.toString() || "0");
+    setDetalle(item.detalle || "");
     setIsOpen(true);
   };
 
@@ -131,6 +135,7 @@ export function ItemCRUD() {
       tipo_item: tipo,
       precio: Number(precio),
       stock_actual: tipo === "REPUESTO" ? Number(stock) : null,
+      detalle: detalle.trim() || null,
     };
 
     try {
@@ -255,7 +260,14 @@ export function ItemCRUD() {
               items.map((item) => (
                 <TableRow key={item.id_item} className="hover:bg-muted/20">
                   <TableCell className="font-mono text-xs font-semibold">{item.codigo}</TableCell>
-                  <TableCell className="font-medium">{item.descripcion}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{item.descripcion}</div>
+                    {item.detalle && (
+                      <div className="text-[11px] text-foreground/80 italic mt-0.5">
+                        ↳ {item.detalle}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                       item.tipo_item === "REPUESTO" 
@@ -361,6 +373,16 @@ export function ItemCRUD() {
                 placeholder="Ej. Cambio de Aceite Sintético 5W30, Pastilla de Freno Delantera"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="detalle">Explicación / Detalle extendido (Opcional)</Label>
+              <Input
+                id="detalle"
+                placeholder="Ej. Incluye cambio de arandela y revisión de niveles"
+                value={detalle}
+                onChange={(e) => setDetalle(e.target.value)}
               />
             </div>
 

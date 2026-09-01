@@ -21,6 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { BrandModelCombobox } from "@/components/vehicle/BrandModelCombobox";
 
 interface Vehicle {
   id_vehiculo: number;
@@ -329,27 +330,13 @@ export function VehicleCRUD() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="v-marca">Marca</Label>
-                <Input
-                  id="v-marca"
-                  value={marca}
-                  onChange={(e) => setMarca(e.target.value)}
-                  placeholder="Toyota"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="v-modelo">Modelo</Label>
-                <Input
-                  id="v-modelo"
-                  value={modelo}
-                  onChange={(e) => setModelo(e.target.value)}
-                  placeholder="Hilux"
-                />
-              </div>
-            </div>
+            <BrandModelCombobox
+              brand={marca}
+              model={modelo}
+              onBrandChange={setMarca}
+              onModelChange={setModelo}
+              token={token}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="v-anio">Año</Label>

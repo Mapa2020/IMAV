@@ -5,6 +5,7 @@ export type ServiceLine = {
   qty: number;
   unitPrice: number;
   kind: "labor" | "part";
+  detalle?: string;
 };
 
 export type Proforma = {
@@ -34,12 +35,37 @@ export type Proforma = {
 };
 
 export const SUGGESTED_SERVICES: Array<Omit<ServiceLine, "id">> = [
-  { description: "Cambio de aceite y filtro", qty: 1, unitPrice: 320, kind: "labor" },
-  { description: "Alineación y balanceo", qty: 1, unitPrice: 250, kind: "labor" },
-  { description: "Pastillas de freno delanteras", qty: 2, unitPrice: 180, kind: "part" },
-  { description: "Diagnóstico electrónico (scanner)", qty: 1, unitPrice: 150, kind: "labor" },
+  {
+    description: "Cambio de aceite y filtro",
+    qty: 1,
+    unitPrice: 320,
+    kind: "labor",
+  },
+  {
+    description: "Alineación y balanceo",
+    qty: 1,
+    unitPrice: 250,
+    kind: "labor",
+  },
+  {
+    description: "Pastillas de freno delanteras",
+    qty: 2,
+    unitPrice: 180,
+    kind: "part",
+  },
+  {
+    description: "Diagnóstico electrónico (scanner)",
+    qty: 1,
+    unitPrice: 150,
+    kind: "labor",
+  },
   { description: "Cambio de bujías", qty: 4, unitPrice: 65, kind: "part" },
-  { description: "Revisión de suspensión", qty: 1, unitPrice: 200, kind: "labor" },
+  {
+    description: "Revisión de suspensión",
+    qty: 1,
+    unitPrice: 200,
+    kind: "labor",
+  },
 ];
 
 export const RECEPTIONISTS = [
@@ -62,7 +88,10 @@ export const CHECKLIST = [
 ];
 
 export const currency = (n: number) =>
-  new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  new Intl.NumberFormat("es-BO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 
 export const totals = (p: Proforma) => {
   const subtotal = p.lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);

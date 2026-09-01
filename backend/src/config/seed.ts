@@ -105,6 +105,215 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo verificar o agregar numero_proforma a la tabla proformas:", err.message);
     }
 
+    // Asegurar que la tabla explicaciones_items exista (entidad débil para descripción extendida de items_taller)
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`explicaciones_items\` (
+          \`id_explicacion\` int NOT NULL AUTO_INCREMENT,
+          \`id_item\` int NOT NULL,
+          \`descripcion_detallada\` text COLLATE utf8mb4_unicode_ci NOT NULL,
+          PRIMARY KEY (\`id_explicacion\`),
+          UNIQUE KEY \`uq_item_explicacion\` (\`id_item\`),
+          CONSTRAINT \`fk_explicacion_item\` FOREIGN KEY (\`id_item\`) REFERENCES \`items_taller\` (\`id_item\`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log("Tabla 'explicaciones_items' verificada/creada con éxito.");
+    } catch (err: any) {
+      console.warn("No se pudo verificar o crear explicaciones_items:", err.message);
+    }
+
+    // Asegurar tablas de marcas y modelos de vehiculo
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`marcas_vehiculo\` (
+          \`id_marca\` int NOT NULL AUTO_INCREMENT,
+          \`nombre\` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+          PRIMARY KEY (\`id_marca\`),
+          UNIQUE KEY \`uq_marca_nombre\` (\`nombre\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`modelos_vehiculo\` (
+          \`id_modelo\` int NOT NULL AUTO_INCREMENT,
+          \`id_marca\` int NOT NULL,
+          \`nombre\` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+          PRIMARY KEY (\`id_modelo\`),
+          UNIQUE KEY \`uq_marca_modelo\` (\`id_marca\`, \`nombre\`),
+          CONSTRAINT \`fk_modelos_marca\` FOREIGN KEY (\`id_marca\`) REFERENCES \`marcas_vehiculo\` (\`id_marca\`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log("Tablas 'marcas_vehiculo' y 'modelos_vehiculo' verificadas/creadas.");
+
+      // Sembrar marcas y modelos si está vacía
+      const [marcasCount] = await connection.query("SELECT COUNT(*) as count FROM marcas_vehiculo");
+      if ((marcasCount as any)[0].count === 0) {
+        console.log("Sembrando catálogo de marcas y modelos de vehículos...");
+        const defaultBrandsWithModels = [
+          {
+            marca: "Toyota",
+            modelos: ["Hilux", "Land Cruiser", "Prado", "RAV4", "Corolla", "Yaris", "Fortuner", "4Runner", "Tacoma", "Rush", "Etios", "Hiace"]
+          },
+          {
+            marca: "Suzuki",
+            modelos: ["Grand Vitara", "Jimny", "Swift", "Vitara", "Celerio", "Baleno", "Ertiga", "S-Presso", "Alto", "Carry"]
+          },
+          {
+            marca: "Nissan",
+            modelos: ["Frontier", "Patrol", "Pathfinder", "X-Trail", "Sentra", "Kicks", "Versa", "Navara", "Tiida", "March"]
+          },
+          {
+            marca: "Ford",
+            modelos: ["Ranger", "F-150", "Explorer", "Escape", "EcoSport", "Everest", "Expedition", "Bronco"]
+          },
+          {
+            marca: "Mitsubishi",
+            modelos: ["Montero", "Montero Sport", "L200", "Outlander", "ASX", "Pajero", "Eclipse Cross"]
+          },
+          {
+            marca: "Hyundai",
+            modelos: ["Tucson", "Santa Fe", "Creta", "Accent", "Elantra", "Grand i10", "H-1", "Venue", "Kona"]
+          },
+          {
+            marca: "Kia",
+            modelos: ["Sportage", "Sorento", "Rio", "Cerato", "Picanto", "Seltos", "Sonet", "Soul", "Soluto"]
+          },
+          {
+            marca: "Chevrolet",
+            modelos: ["Silverado", "Colorado", "Tracker", "S10", "Trailblazer", "Cruze", "Aveo", "Onix", "Captiva", "D-Max"]
+          },
+          {
+            marca: "Jeep",
+            modelos: ["Wrangler", "Grand Cherokee", "Cherokee", "Compass", "Renegade", "Gladiator"]
+          },
+          {
+            marca: "Honda",
+            modelos: ["CR-V", "Civic", "HR-V", "Pilot", "Fit", "Accord", "City"]
+          },
+          {
+            marca: "Volkswagen",
+            modelos: ["Gol", "Amarok", "Tiguan", "Saveiro", "Voyage", "Taos", "T-Cross", "Polo", "Golf"]
+          },
+          {
+            marca: "Renault",
+            modelos: ["Duster", "Kwid", "Sandero", "Stepway", "Logan", "Koleos", "Oroch", "Captur"]
+          },
+          {
+            marca: "Chery",
+            modelos: ["Tiggo 2", "Tiggo 3", "Tiggo 4", "Tiggo 7", "Tiggo 8", "QQ", "Arrizo 5"]
+          },
+          {
+            marca: "JAC",
+            modelos: ["S2", "S3", "S4", "T6", "T8", "JS2", "JS4", "JS6"]
+          },
+          {
+            marca: "BYD",
+            modelos: ["Song Plus", "Yuan Plus", "Tang", "Han", "Dolphin", "Seagull", "F3"]
+          },
+          {
+            marca: "GAC",
+            modelos: ["GS3", "GS4", "GS8", "Emzoom", "Empow"]
+          },
+          {
+            marca: "Great Wall",
+            modelos: ["Poer", "Wingle 5", "Wingle 7", "Haval H6", "Haval Jolion", "Haval H9", "Tank 300"]
+          },
+          {
+            marca: "Mazda",
+            modelos: ["BT-50", "CX-5", "CX-3", "CX-30", "CX-9", "Mazda 3", "Mazda 2", "Mazda 6"]
+          },
+          {
+            marca: "Fiat",
+            modelos: ["Uno", "Strada", "Palio", "Cronos", "Mobi", "Toro", "Fiorino"]
+          },
+          {
+            marca: "Peugeot",
+            modelos: ["206", "207", "208", "301", "2008", "3008", "5008", "Partner"]
+          },
+          {
+            marca: "BMW",
+            modelos: ["X1", "X3", "X5", "X6", "Serie 3", "Serie 5", "Serie 1"]
+          },
+          {
+            marca: "Mercedes-Benz",
+            modelos: ["Clase C", "Clase E", "Clase A", "GLC", "GLE", "GLA", "Sprinter"]
+          },
+          {
+            marca: "Audi",
+            modelos: ["A3", "A4", "A6", "Q3", "Q5", "Q7"]
+          },
+          {
+            marca: "Subaru",
+            modelos: ["Forester", "Outback", "XV", "Impreza", "Legacy"]
+          }
+        ];
+
+        for (const item of defaultBrandsWithModels) {
+          const [mResult] = await connection.query(
+            "INSERT INTO marcas_vehiculo (nombre) VALUES (?) ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)",
+            [item.marca]
+          );
+          let brandId = (mResult as any).insertId;
+          if (!brandId) {
+            const [bRow] = await connection.query("SELECT id_marca FROM marcas_vehiculo WHERE nombre = ?", [item.marca]);
+            brandId = (bRow as any)[0]?.id_marca;
+          }
+          if (brandId) {
+            for (const mod of item.modelos) {
+              await connection.query(
+                "INSERT INTO modelos_vehiculo (id_marca, nombre) VALUES (?, ?) ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)",
+                [brandId, mod]
+              );
+            }
+          }
+        }
+        console.log("Catálogo de marcas y modelos sembrado con éxito.");
+      }
+    } catch (err: any) {
+      console.warn("No se pudo verificar o sembrar marcas/modelos:", err.message);
+    }
+
+    // Asegurar tabla de informes técnicos
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`informes_tecnicos\` (
+          \`id_informe\` int NOT NULL AUTO_INCREMENT,
+          \`id_vehiculo\` int NOT NULL,
+          \`id_cliente\` int NOT NULL,
+          \`id_ingreso\` int DEFAULT NULL,
+          \`id_empleado\` int DEFAULT NULL,
+          \`numero_informe\` varchar(30) NOT NULL,
+          \`fecha\` date NOT NULL,
+          \`ciudad\` varchar(50) NOT NULL DEFAULT 'Santa Cruz',
+          \`destinatario_nombre\` varchar(255) NOT NULL,
+          \`destinatario_atencion\` varchar(150) DEFAULT NULL,
+          \`vehiculo_descripcion\` varchar(150) NOT NULL,
+          \`placa\` varchar(20) NOT NULL,
+          \`kilometraje\` int DEFAULT NULL,
+          \`referencia\` varchar(255) NOT NULL,
+          \`contenido\` text NOT NULL,
+          \`conclusion\` text DEFAULT NULL,
+          \`costo_estimado\` decimal(10,2) DEFAULT NULL,
+          \`firmante_nombre\` varchar(150) NOT NULL DEFAULT 'IMAV MOTORS S.R.L.',
+          \`firmante_cargo\` varchar(100) NOT NULL DEFAULT 'Servicio Integral Automotriz',
+          \`estado\` enum('BORRADOR','EMITIDO','ANULADO') NOT NULL DEFAULT 'EMITIDO',
+          \`created_at\` timestamp DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id_informe\`),
+          KEY \`fk_informe_vehiculo\` (\`id_vehiculo\`),
+          KEY \`fk_informe_cliente\` (\`id_cliente\`),
+          KEY \`fk_informe_ingreso\` (\`id_ingreso\`),
+          KEY \`fk_informe_empleado\` (\`id_empleado\`),
+          CONSTRAINT \`fk_inf_vehiculo\` FOREIGN KEY (\`id_vehiculo\`) REFERENCES \`vehiculos\` (\`id_vehiculo\`) ON DELETE RESTRICT ON UPDATE CASCADE,
+          CONSTRAINT \`fk_inf_cliente\` FOREIGN KEY (\`id_cliente\`) REFERENCES \`clientes\` (\`id_cliente\`) ON DELETE RESTRICT ON UPDATE CASCADE,
+          CONSTRAINT \`fk_inf_ingreso\` FOREIGN KEY (\`id_ingreso\`) REFERENCES \`ingresos_taller\` (\`id_ingreso\`) ON DELETE SET NULL ON UPDATE CASCADE,
+          CONSTRAINT \`fk_inf_empleado\` FOREIGN KEY (\`id_empleado\`) REFERENCES \`empleados\` (\`id_empleado\`) ON DELETE SET NULL ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log("Tabla 'informes_tecnicos' verificada/creada.");
+    } catch (err: any) {
+      console.warn("No se pudo verificar o crear la tabla 'informes_tecnicos':", err.message);
+    }
+
     // 2. Sembrar Empleados si no existen
     const [empleados] = await connection.query("SELECT COUNT(*) as count FROM empleados");
     if ((empleados as any)[0].count === 0) {

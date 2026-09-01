@@ -104,6 +104,47 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
   }
 });
 
+// Helper para asegurar que la marca y modelo existan en el catálogo
+async function ensureBrandAndModelExist(marca: string, modelo: string): Promise<void> {
+  const cleanMarca = String(marca || "").trim();
+  const cleanModelo = String(modelo || "").trim();
+  if (!cleanMarca) return;
+
+  try {
+    let brandId: number | null = null;
+    const [brandRows] = await pool.query(
+      "SELECT id_marca FROM marcas_vehiculo WHERE LOWER(nombre) = LOWER(?)",
+      [cleanMarca]
+    );
+
+    if ((brandRows as any[]).length > 0) {
+      brandId = (brandRows as any[])[0].id_marca;
+    } else {
+      const [insertBrand] = await pool.query(
+        "INSERT INTO marcas_vehiculo (nombre) VALUES (?)",
+        [cleanMarca]
+      );
+      brandId = (insertBrand as any).insertId;
+    }
+
+    if (cleanModelo && brandId) {
+      const [modelRows] = await pool.query(
+        "SELECT id_modelo FROM modelos_vehiculo WHERE id_marca = ? AND LOWER(nombre) = LOWER(?)",
+        [brandId, cleanModelo]
+      );
+
+      if ((modelRows as any[]).length === 0) {
+        await pool.query(
+          "INSERT INTO modelos_vehiculo (id_marca, nombre) VALUES (?, ?)",
+          [brandId, cleanModelo]
+        );
+      }
+    }
+  } catch (err: any) {
+    console.warn("No se pudo auto-registrar marca/modelo en el catálogo:", err.message);
+  }
+}
+
 // @desc    Create a vehicle
 // @route   POST /api/vehicles
 // @access  Private (Editor, Admin)
@@ -139,12 +180,15 @@ router.post(
         [
           id_cliente,
           placa.toUpperCase(),
-          marca,
-          modelo,
+          marca.trim(),
+          modelo.trim(),
           anio ? parseInt(anio) : null,
           color || null,
         ]
       );
+
+      // Auto-registrar marca y modelo en el catálogo para futuros usos
+      await ensureBrandAndModelExist(marca, modelo);
 
       const newVehicleId = (result as any).insertId;
       const [newVehicle] = await pool.query("SELECT * FROM vehiculos WHERE id_vehiculo = ?", [newVehicleId]);
@@ -191,13 +235,16 @@ router.put(
         [
           id_cliente,
           placa.toUpperCase(),
-          marca,
-          modelo,
+          marca.trim(),
+          modelo.trim(),
           anio ? parseInt(anio) : null,
           color || null,
           id,
         ]
       );
+
+      // Auto-registrar marca y modelo en el catálogo para futuros usos
+      await ensureBrandAndModelExist(marca, modelo);
 
       const [updatedVehicle] = await pool.query("SELECT * FROM vehiculos WHERE id_vehiculo = ?", [id]);
       res.json((updatedVehicle as any[])[0]);
@@ -206,6 +253,7 @@ router.put(
     }
   }
 );
+
 
 // @desc    Delete a vehicle
 // @route   DELETE /api/vehicles/:id

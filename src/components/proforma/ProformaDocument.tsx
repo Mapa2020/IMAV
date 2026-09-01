@@ -5,7 +5,13 @@ import boschLogo from "@/assets/Bosch.png";
 import gacLogo from "@/assets/gac.png";
 import gwLogo from "@/assets/gw.png";
 
-export function ProformaDocument({ data, code }: { data: Proforma; code: string }) {
+export function ProformaDocument({
+  data,
+  code,
+}: {
+  data: Proforma;
+  code: string;
+}) {
   const t = totals(data);
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -20,7 +26,8 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
     const updateDimensions = () => {
       const containerWidth = container.clientWidth;
       const targetWidth = 816; // 8.5in in pixels at 96dpi
-      const currentScale = containerWidth < targetWidth ? containerWidth / targetWidth : 1;
+      const currentScale =
+        containerWidth < targetWidth ? containerWidth / targetWidth : 1;
       setScale(currentScale);
 
       const docHeight = inner.offsetHeight || 1056;
@@ -45,23 +52,24 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
     <div
       ref={containerRef}
       className="w-full overflow-hidden relative print:h-auto print:overflow-visible print:static"
-      style={{ height: scale < 1 ? `${height}px` : 'auto' }}
+      style={{ height: scale < 1 ? `${height}px` : "auto" }}
     >
       <div
         ref={innerRef}
         className="print:!transform-none print:!static print:!w-auto print:!h-auto print:!overflow-visible origin-top-left flex flex-col justify-start"
         style={{
-          transform: scale < 1 ? `scale(${scale})` : 'none',
-          width: scale < 1 ? '816px' : '100%',
-          position: scale < 1 ? 'absolute' : 'relative',
+          transform: scale < 1 ? `scale(${scale})` : "none",
+          width: scale < 1 ? "816px" : "100%",
+          position: scale < 1 ? "absolute" : "relative",
           left: 0,
           top: 0,
         }}
       >
         <div className="overflow-hidden rounded-xl bg-paper text-paper-foreground shadow-paper relative flex print:grid print:grid-cols-[1fr_3rem] print:overflow-visible print:rounded-none md:w-[8.5in] md:min-h-[11.0in] mx-auto flex-row w-full print:w-[8.5in] print:h-[11.0in] print:min-h-[11.0in]">
           {/* Estilos para impresión y visualización */}
-          <style dangerouslySetInnerHTML={{
-            __html: `
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
         @media screen {
           .proforma-table {
             display: flex !important;
@@ -131,7 +139,9 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
             display: none !important;
           }
         }
-      `}} />
+      `,
+            }}
+          />
 
           {/* Centro: Contenido principal de la proforma formateado como tabla */}
           <table className="proforma-table border-none border-collapse flex-1 min-w-0">
@@ -143,8 +153,25 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     <div className="flex items-start justify-between gap-6">
                       <div>
                         <div className="font-display flex items-baseline gap-1.5 leading-none text-[#41424C]">
-                          <span className="text-4xl font-black tracking-wider" style={{ textShadow: "1px 0 0 #41424C, -1px 0 0 #41424C", fontWeight: 950 }}>IMAV</span>
-                          <span className="text-lg font-black tracking-wider ml-1" style={{ textShadow: "0.5px 0 0 #41424C, -0.5px 0 0 #41424C", fontWeight: 950 }}>MOTOR S.R.L.</span>
+                          <span
+                            className="text-4xl font-black tracking-wider"
+                            style={{
+                              textShadow: "1px 0 0 #41424C, -1px 0 0 #41424C",
+                              fontWeight: 950,
+                            }}
+                          >
+                            IMAV
+                          </span>
+                          <span
+                            className="text-lg font-black tracking-wider ml-1"
+                            style={{
+                              textShadow:
+                                "0.5px 0 0 #41424C, -0.5px 0 0 #41424C",
+                              fontWeight: 950,
+                            }}
+                          >
+                            MOTOR S.R.L.
+                          </span>
                         </div>
                         <p className="text-[9px] uppercase tracking-widest text-[#666666] font-bold mt-[2px] leading-none">
                           Autopartes y Servicios
@@ -155,9 +182,27 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     </div>
 
                     {/* Las 2 líneas juntas que NO cubren los márgenes */}
-                    <div className="mt-1 mb-0 flex flex-col gap-0 w-full" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
-                      <div className="h-[8px] w-full bg-[#41424C]" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }} />
-                      <div className="h-[4px] w-full bg-[#B87333]" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }} />
+                    <div
+                      className="mt-1 mb-0 flex flex-col gap-0 w-full"
+                      style={{
+                        WebkitPrintColorAdjust: "exact",
+                        printColorAdjust: "exact",
+                      }}
+                    >
+                      <div
+                        className="h-[8px] w-full bg-[#41424C]"
+                        style={{
+                          WebkitPrintColorAdjust: "exact",
+                          printColorAdjust: "exact",
+                        }}
+                      />
+                      <div
+                        className="h-[4px] w-full bg-[#B87333]"
+                        style={{
+                          WebkitPrintColorAdjust: "exact",
+                          printColorAdjust: "exact",
+                        }}
+                      />
                     </div>
 
                     {/* Logo Bosch posicionado de forma absoluta para calzar con las líneas */}
@@ -193,7 +238,9 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                       <p className="text-lg font-bold uppercase tracking-[0.2em] text-[#B87333] leading-none">
                         Cotización
                       </p>
-                      <p className="font-mono text-lg font-bold text-black leading-none">{code}</p>
+                      <p className="font-mono text-lg font-bold text-black leading-none">
+                        {code}
+                      </p>
                       <p className="text-xs font-mono text-slate-700 leading-none mt-[2px]">
                         Fecha Emisión: {data.entryDate || "—"}
                       </p>
@@ -275,32 +322,57 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="border-y border-slate-300 text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
-                          <th className="py-1.5 print:py-1 text-left font-semibold">Descripción</th>
-                          <th className="w-16 py-1.5 print:py-1 text-right font-semibold">Cant.</th>
-                          <th className="w-28 py-1.5 print:py-1 text-right font-semibold">P. Unit.</th>
-                          <th className="w-28 py-1.5 print:py-1 text-right font-semibold">Importe</th>
+                          <th className="py-1.5 print:py-1 text-left font-semibold">
+                            Descripción
+                          </th>
+                          <th className="w-10 py-1.5 print:py-1 text-right font-semibold">
+                            Cant.
+                          </th>
+                          <th className="w-18 py-1.5 print:py-1 text-right font-semibold">
+                            P. Unit.
+                          </th>
+                          <th className="w-24 py-1.5 print:py-1 text-right font-semibold">
+                            Importe
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {data.lines.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-xs text-slate-500">
+                            <td
+                              colSpan={4}
+                              className="py-8 text-center text-xs text-slate-500"
+                            >
                               Aún no se han agregado servicios ni repuestos.
                             </td>
                           </tr>
                         )}
                         {data.lines.map((l) => (
-                          <tr key={l.id} className="border-b border-slate-300/70 align-top">
+                          <tr
+                            key={l.id}
+                            className="border-b border-slate-300/70 align-top"
+                          >
                             <td className="py-1.5 print:py-1 pr-4 text-[11px] sm:text-xs print:text-[10px]">
-                              <span className="font-mono font-bold text-paper-foreground mr-4">
-                                {l.code || "S/C"}
-                              </span>
-                              <span className="text-paper-foreground">
-                                {l.description || "—"}
-                              </span>
+                              <div className="flex items-baseline">
+                                <span className="font-mono font-bold text-paper-foreground mr-3 shrink-0">
+                                  {l.code || "S/C"}
+                                </span>
+                                <span className="text-paper-foreground font-medium">
+                                  {l.description || "—"}
+                                </span>
+                              </div>
+                              {l.detalle && l.detalle.trim().length > 0 && (
+                                <div className="mt-0.5 ml-2 pl-2 border-l-2 border-slate-350 text-[10px] sm:text-[11px] print:text-[9px] text-paper-foreground italic">
+                                  ↳ {l.detalle}
+                                </div>
+                              )}
                             </td>
-                            <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">{l.qty}</td>
-                            <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">{currency(l.unitPrice)}</td>
+                            <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">
+                              {l.qty}
+                            </td>
+                            <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">
+                              {currency(l.unitPrice)}
+                            </td>
                             <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px] font-medium">
                               {currency(l.qty * l.unitPrice)}
                             </td>
@@ -309,16 +381,6 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Observaciones (si las hay) */}
-                  {data.complaint && (
-                    <div className="mx-8 mt-4 mb-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 print:py-1.5 avoid-break">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        Observaciones
-                      </p>
-                      <p className="mt-0.5 text-xs sm:text-sm leading-relaxed">{data.complaint}</p>
-                    </div>
-                  )}
 
                   {/* Literal y Totales */}
                   <div className="flex flex-col sm:flex-row justify-between items-start px-8 pt-5 gap-4 avoid-break">
@@ -331,11 +393,18 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
                     <dl className="w-full max-w-[16rem] space-y-1.5 text-sm">
                       <Total k="Subtotal" v={currency(t.subtotal)} />
                       {data.discount > 0 && (
-                        <Total k={`Descuento (${data.discount}%)`} v={`- ${currency(t.discount)}`} />
+                        <Total
+                          k={`Descuento (${data.discount}%)`}
+                          v={`- ${currency(t.discount)}`}
+                        />
                       )}
                       <div className="mt-2 flex items-baseline justify-between border-t border-slate-300 pt-2.5">
-                        <dt className="text-[11px] font-medium uppercase tracking-[0.16em]">Total Bs</dt>
-                        <dd className="font-mono text-xl font-semibold">{currency(t.total)}</dd>
+                        <dt className="text-[11px] font-medium uppercase tracking-[0.16em]">
+                          Total Bs
+                        </dt>
+                        <dd className="font-mono text-xl font-semibold">
+                          {currency(t.total)}
+                        </dd>
                       </div>
                     </dl>
                   </div>
@@ -346,12 +415,32 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
             <tfoot className="proforma-tfoot">
               <tr className="proforma-tr">
                 <td className="proforma-td p-0 border-none">
+                  {/* Observaciones (si las hay) */}
+                  {data.complaint && (
+                    <div className="mx-8 mt-4 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 print:py-1.5 avoid-break">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        Observaciones
+                      </p>
+                      <p className="mt-0.5 text-xs sm:text-sm leading-relaxed">
+                        {data.complaint}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Pie de página con especialidades */}
-                  <div className="mt-8 border-t border-slate-300 px-7 py-6 text-center avoid-break">
+                  <div
+                    className={`border-t border-slate-300 px-7 py-6 text-center avoid-break ${
+                      data.complaint ? "mt-3" : "mt-8"
+                    }`}
+                  >
                     <p className="text-[8.5px] sm:text-[9.5px] print:text-[8.5px] leading-normal text-slate-600 max-w-4xl mx-auto font-medium tracking-tight">
-                      Mecánica General - Mantenimiento Preventivo y Correctivo - Diagnóstico Computarizado - Inyección Electrónica - Electricidad Automotriz
+                      Mecánica General - Mantenimiento Preventivo y Correctivo -
+                      Diagnóstico Computarizado - Inyección Electrónica -
+                      Electricidad Automotriz
                       <br />
-                      Reparación de Motores - Cajas de Transmisión - Suspensión y Dirección - Frenos ABS/ESP - Alineación y Convergencia - Balanceo y Montaje.
+                      Reparación de Motores - Cajas de Transmisión - Suspensión
+                      y Dirección - Frenos ABS/ESP - Alineación y Convergencia -
+                      Balanceo y Montaje.
                     </p>
                   </div>
                 </td>
@@ -377,7 +466,6 @@ export function ProformaDocument({ data, code }: { data: Proforma; code: string 
   );
 }
 
-
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
@@ -393,7 +481,11 @@ function Row({ k, v, mono }: { k: string; v?: string; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 text-xs">
       <dt className="shrink-0 text-slate-500">{k}</dt>
-      <dd className={`truncate text-right font-medium ${mono ? "font-mono" : ""}`}>{v || "—"}</dd>
+      <dd
+        className={`truncate text-right font-medium ${mono ? "font-mono" : ""}`}
+      >
+        {v || "—"}
+      </dd>
     </div>
   );
 }
@@ -408,22 +500,68 @@ function Total({ k, v }: { k: string; v: string }) {
 }
 
 function numberToWords(num: number): string {
-  if (num === 0) return "Son: CERO 00/100, Bs.";
+  if (num === 0) return "Son: CERO, 00/100 Bs.";
 
   const temp = Math.floor(num);
   const cents = Math.round((num - temp) * 100);
-  const centsStr = String(cents).padStart(2, "0") + "/100, Bs.";
+  const centsStr = ", " + String(cents).padStart(2, "0") + "/100 Bs.";
 
-  const unidades = ["", "UN", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE"];
-  const decenas = ["", "DIEZ", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA"];
+  const unidades = [
+    "",
+    "UN",
+    "DOS",
+    "TRES",
+    "CUATRO",
+    "CINCO",
+    "SEIS",
+    "SIETE",
+    "OCHO",
+    "NUEVE",
+  ];
+  const decenas = [
+    "",
+    "DIEZ",
+    "VEINTE",
+    "TREINTA",
+    "CUARENTA",
+    "CINCUENTA",
+    "SESENTA",
+    "SETENTA",
+    "OCHENTA",
+    "NOVENTA",
+  ];
   const especiales = {
-    11: "ONCE", 12: "DOCE", 13: "TRECE", 14: "CATORCE", 15: "QUINCE",
-    16: "DIECISEIS", 17: "DIECISIETE", 18: "DIECIOCHO", 19: "DIECINUEVE",
-    21: "VEINTIUNO", 22: "VEINTIDOS", 23: "VEINTITRES", 24: "VEINTICUATRO",
-    25: "VEINTICINCO", 26: "VEINTISEIS", 27: "VEINTISIETE", 28: "VEINTIOCHO",
-    29: "VEINTINUEVE"
+    11: "ONCE",
+    12: "DOCE",
+    13: "TRECE",
+    14: "CATORCE",
+    15: "QUINCE",
+    16: "DIECISEIS",
+    17: "DIECISIETE",
+    18: "DIECIOCHO",
+    19: "DIECINUEVE",
+    21: "VEINTIUNO",
+    22: "VEINTIDOS",
+    23: "VEINTITRES",
+    24: "VEINTICUATRO",
+    25: "VEINTICINCO",
+    26: "VEINTISEIS",
+    27: "VEINTISIETE",
+    28: "VEINTIOCHO",
+    29: "VEINTINUEVE",
   };
-  const centenas = ["", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS", "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS"];
+  const centenas = [
+    "",
+    "CIENTO",
+    "DOSCIENTOS",
+    "TRESCIENTOS",
+    "CUATROCIENTOS",
+    "QUINIENTOS",
+    "SEISCIENTOS",
+    "SETECIENTOS",
+    "OCHOCIENTOS",
+    "NOVECIENTOS",
+  ];
 
   function convertirGrupo(n: number): string {
     let output = "";
@@ -484,28 +622,82 @@ function numberToWords(num: number): string {
     words += convertirGrupo(n);
   }
 
-  return `Son: ${words.trim()} ${centsStr}`;
+  return `Son: ${words.trim()}${centsStr}`;
 }
 
 const CAR_BRANDS = [
-  { name: "Ford", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/ford.png" },
-  { name: "Toyota", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/toyota.png" },
-  { name: "Mazda", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/mazda.png" },
-  { name: "Jeep", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/jeep.png" },
-  { name: "Honda", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/honda.png" },
-  { name: "Volkswagen", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/volkswagen.png" },
-  { name: "Chevrolet", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/chevrolet.png" },
-  { name: "Mitsubishi", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/mitsubishi.png" },
-  { name: "Renault", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/renault.png" },
-  { name: "Nissan", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/nissan.png" },
-  { name: "Suzuki", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/suzuki.png" },
-  { name: "Hyundai", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/hyundai.png" },
-  { name: "Kia", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/kia.png" },
-  { name: "Fiat", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/fiat.png" },
-  { name: "Peugeot", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/peugeot.png" },
-  { name: "Chery", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/chery.png" },
-  { name: "Jac", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/jac.png" },
-  { name: "Byd", logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/byd.png" },
+  {
+    name: "Ford",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/ford.png",
+  },
+  {
+    name: "Toyota",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/toyota.png",
+  },
+  {
+    name: "Mazda",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/mazda.png",
+  },
+  {
+    name: "Jeep",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/jeep.png",
+  },
+  {
+    name: "Honda",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/honda.png",
+  },
+  {
+    name: "Volkswagen",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/volkswagen.png",
+  },
+  {
+    name: "Chevrolet",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/chevrolet.png",
+  },
+  {
+    name: "Mitsubishi",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/mitsubishi.png",
+  },
+  {
+    name: "Renault",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/renault.png",
+  },
+  {
+    name: "Nissan",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/nissan.png",
+  },
+  {
+    name: "Suzuki",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/suzuki.png",
+  },
+  {
+    name: "Hyundai",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/hyundai.png",
+  },
+  {
+    name: "Kia",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/kia.png",
+  },
+  {
+    name: "Fiat",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/fiat.png",
+  },
+  {
+    name: "Peugeot",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/peugeot.png",
+  },
+  {
+    name: "Chery",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/chery.png",
+  },
+  {
+    name: "Jac",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/jac.png",
+  },
+  {
+    name: "Byd",
+    logo: "https://cdn.jsdelivr.net/gh/filippofilip95/car-logos-dataset@master/logos/thumb/byd.png",
+  },
   { name: "Gac", logo: gacLogo },
-  { name: "Great wall", logo: gwLogo }
+  { name: "Great wall", logo: gwLogo },
 ];

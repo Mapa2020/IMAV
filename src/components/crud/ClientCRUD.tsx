@@ -18,7 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Search, Edit2, Trash2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,9 +61,12 @@ export function ClientCRUD() {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clients?query=${encodeURIComponent(search)}`, {
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
-      });
+      const res = await fetch(
+        `${API_URL}/clients?query=${encodeURIComponent(search)}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
       if (res.ok) {
         const data = await res.json();
         setClients(data);
@@ -81,7 +90,7 @@ export function ClientCRUD() {
     setEditingClient(null);
     setTipo("CI");
     setNombre("");
-    setTelefono("");
+    setTelefono("+591");
     setDireccion("");
     setDocVal("");
     setPais("");
@@ -96,7 +105,18 @@ export function ClientCRUD() {
     setEditingClient(client);
     setTipo(client.tipo_cliente);
     setNombre(client.nombre);
-    setTelefono(client.telefono || "");
+
+    // Enforce +591 prefix on edit
+    let phoneVal = client.telefono || "";
+    if (phoneVal) {
+      const cleanPhone = phoneVal.replace(/\s+/g, "").replace(/\+/g, "");
+      phoneVal = cleanPhone.startsWith("591")
+        ? `+${cleanPhone}`
+        : `+591${cleanPhone}`;
+    } else {
+      phoneVal = "+591";
+    }
+    setTelefono(phoneVal);
     setDireccion(client.direccion || "");
     setPais(client.pais_origen || "");
     setDocVal(
@@ -104,7 +124,7 @@ export function ClientCRUD() {
         ? client.ci || ""
         : client.tipo_cliente === "NIT"
           ? client.nit || ""
-          : client.pasaporte || ""
+          : client.pasaporte || "",
     );
     setIsOpen(true);
   };
@@ -150,7 +170,7 @@ export function ClientCRUD() {
         method,
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(bodyData),
       });
@@ -162,7 +182,9 @@ export function ClientCRUD() {
         return;
       }
 
-      toast.success(editingClient ? "Cliente actualizado" : "Cliente registrado");
+      toast.success(
+        editingClient ? "Cliente actualizado" : "Cliente registrado",
+      );
       setIsOpen(false);
       fetchClients();
     } catch (err) {
@@ -176,14 +198,18 @@ export function ClientCRUD() {
       return;
     }
 
-    if (!confirm("¿Está seguro de eliminar este cliente? Esto podría fallar si tiene vehículos asociados.")) {
+    if (
+      !confirm(
+        "¿Está seguro de eliminar este cliente? Esto podría fallar si tiene vehículos asociados.",
+      )
+    ) {
       return;
     }
 
     try {
       const res = await fetch(`${API_URL}/clients/${id}`, {
         method: "DELETE",
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       const data = await res.json();
@@ -232,13 +258,19 @@ export function ClientCRUD() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   Cargando clientes...
                 </TableCell>
               </TableRow>
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-6 text-muted-foreground"
+                >
                   No se encontraron clientes.
                 </TableCell>
               </TableRow>
@@ -253,13 +285,17 @@ export function ClientCRUD() {
 
                 return (
                   <TableRow key={client.id_cliente}>
-                    <TableCell className="font-medium">{client.nombre}</TableCell>
+                    <TableCell className="font-medium">
+                      {client.nombre}
+                    </TableCell>
                     <TableCell className="text-xs uppercase font-semibold text-muted-foreground">
                       {client.tipo_cliente}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{doc}</TableCell>
                     <TableCell>{client.telefono || "—"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{client.direccion || "—"}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {client.direccion || "—"}
+                    </TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button
                         variant="ghost"
@@ -275,9 +311,13 @@ export function ClientCRUD() {
                         size="icon"
                         onClick={() => handleDelete(client.id_cliente)}
                         disabled={!isAdmin}
-                        title={isAdmin ? "Eliminar" : "Eliminar (Solo Administrador)"}
+                        title={
+                          isAdmin ? "Eliminar" : "Eliminar (Solo Administrador)"
+                        }
                       >
-                        <Trash2 className={`size-4 ${isAdmin ? "text-destructive" : "text-muted-foreground/40"}`} />
+                        <Trash2
+                          className={`size-4 ${isAdmin ? "text-destructive" : "text-muted-foreground/40"}`}
+                        />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -300,17 +340,16 @@ export function ClientCRUD() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Tipo de Cliente</Label>
-              <Select
-                value={tipo}
-                onValueChange={(val: any) => setTipo(val)}
-              >
+              <Select value={tipo} onValueChange={(val: any) => setTipo(val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione Tipo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CI">Cédula de Identidad (CI)</SelectItem>
                   <SelectItem value="NIT">NIT / Factura</SelectItem>
-                  <SelectItem value="EXTRANJERO">Extranjero (Pasaporte)</SelectItem>
+                  <SelectItem value="EXTRANJERO">
+                    Extranjero (Pasaporte)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -327,13 +366,23 @@ export function ClientCRUD() {
 
             <div className="space-y-2">
               <Label htmlFor="c-doc">
-                {tipo === "CI" ? "Cédula de Identidad (CI)" : tipo === "NIT" ? "NIT" : "Número de Pasaporte"}
+                {tipo === "CI"
+                  ? "Cédula de Identidad (CI)"
+                  : tipo === "NIT"
+                    ? "NIT"
+                    : "Número de Pasaporte"}
               </Label>
               <Input
                 id="c-doc"
                 value={docVal}
                 onChange={(e) => setDocVal(e.target.value)}
-                placeholder={tipo === "CI" ? "1234567 SC" : tipo === "NIT" ? "1029384756" : "PE987654"}
+                placeholder={
+                  tipo === "CI"
+                    ? "1234567 SC"
+                    : tipo === "NIT"
+                      ? "1029384756"
+                      : "PE987654"
+                }
               />
             </div>
 
@@ -354,8 +403,19 @@ export function ClientCRUD() {
               <Input
                 id="c-tel"
                 value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
+                onChange={(e) => {
+                  let val = e.target.value;
+                  if (!val.startsWith("+591")) {
+                    if (val.length < 4) {
+                      val = "+591";
+                    } else {
+                      val = "+591" + val.replace(/^\+?591?/, "");
+                    }
+                  }
+                  setTelefono(val);
+                }}
                 placeholder="+591 70012345"
+                className="font-mono"
               />
             </div>
 
@@ -370,12 +430,14 @@ export function ClientCRUD() {
             </div>
 
             <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">
-                Guardar
-              </Button>
+              <Button type="submit">Guardar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

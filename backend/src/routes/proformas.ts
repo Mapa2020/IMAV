@@ -5,8 +5,16 @@ import { protect, authorize, AuthenticatedRequest } from "../middleware/authMidd
 const router = Router();
 
 // Helper to find or create an item in items_taller
-async function findOrCreateItem(connection: any, description: string, kind: "labor" | "part", price: number, code?: string): Promise<number> {
+async function findOrCreateItem(
+  connection: any,
+  description: string,
+  kind: "labor" | "part",
+  price: number,
+  code?: string,
+  detalle?: string
+): Promise<number> {
   const tipoItem = kind === "labor" ? "SERVICIO" : "REPUESTO";
+  let idItem: number | null = null;
   
   // Buscar primero por código si se proporciona
   if (code) {
@@ -15,44 +23,55 @@ async function findOrCreateItem(connection: any, description: string, kind: "lab
       [code]
     );
     if ((existingByCode as any[]).length > 0) {
-      return (existingByCode as any[])[0].id_item;
+      idItem = (existingByCode as any[])[0].id_item;
     }
   }
 
-  // Buscar si ya existe por descripción y tipo
-  const [existing] = await connection.query(
-    "SELECT id_item FROM items_taller WHERE descripcion = ? AND tipo_item = ?",
-    [description, tipoItem]
-  );
-  
-  if ((existing as any[]).length > 0) {
-    return (existing as any[])[0].id_item;
+  // Buscar si ya existe por descripción y tipo si aún no se encontró
+  if (!idItem) {
+    const [existing] = await connection.query(
+      "SELECT id_item FROM items_taller WHERE descripcion = ? AND tipo_item = ?",
+      [description, tipoItem]
+    );
+    if ((existing as any[]).length > 0) {
+      idItem = (existing as any[])[0].id_item;
+    }
   }
   
   // Si no existe, crear un nuevo item con código autogenerado
-  const prefix = kind === "labor" ? "SERV" : "REP";
-  const uniqueCode = code || `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  
-  const [itemResult] = await connection.query(
-    "INSERT INTO items_taller (codigo, descripcion, tipo_item) VALUES (?, ?, ?)",
-    [uniqueCode, description, tipoItem]
-  );
-  const idItem = (itemResult as any).insertId;
-  
-  // Insertar en la tabla hija correspondiente
-  if (kind === "labor") {
-    await connection.query(
-      "INSERT INTO servicios (id_item, precio_base) VALUES (?, ?)",
-      [idItem, price]
+  if (!idItem) {
+    const prefix = kind === "labor" ? "SERV" : "REP";
+    const uniqueCode = code || `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    const [itemResult] = await connection.query(
+      "INSERT INTO items_taller (codigo, descripcion, tipo_item) VALUES (?, ?, ?)",
+      [uniqueCode, description, tipoItem]
     );
-  } else {
+    idItem = (itemResult as any).insertId;
+    
+    // Insertar en la tabla hija correspondiente
+    if (kind === "labor") {
+      await connection.query(
+        "INSERT INTO servicios (id_item, precio_base) VALUES (?, ?)",
+        [idItem, price]
+      );
+    } else {
+      await connection.query(
+        "INSERT INTO repuestos (id_item, precio_venta, stock_actual) VALUES (?, ?, ?)",
+        [idItem, price, 100] // stock por defecto
+      );
+    }
+  }
+
+  // Guardar o actualizar la explicación/detalle extendido si se especificó
+  if (idItem && detalle && String(detalle).trim()) {
     await connection.query(
-      "INSERT INTO repuestos (id_item, precio_venta, stock_actual) VALUES (?, ?, ?)",
-      [idItem, price, 100] // stock por defecto
+      "INSERT INTO explicaciones_items (id_item, descripcion_detallada) VALUES (?, ?) ON DUPLICATE KEY UPDATE descripcion_detallada = VALUES(descripcion_detallada)",
+      [idItem, String(detalle).trim()]
     );
   }
   
-  return idItem;
+  return idItem!;
 }
 
 // @desc    Get all proformas with income, client and vehicle details
@@ -164,10 +183,12 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
     // Obtener detalles
     const [details] = await pool.query(
       `
-      SELECT dp.*, it.descripcion, it.codigo, it.tipo_item
+      SELECT dp.*, it.descripcion, it.codigo, it.tipo_item, ei.descripcion_detallada as detalle
       FROM detalles_proforma dp
       JOIN items_taller it ON dp.id_item = it.id_item
+      LEFT JOIN explicaciones_items ei ON it.id_item = ei.id_item
       WHERE dp.id_proforma = ?
+      ORDER BY dp.id_detalle ASC
       `,
       [id]
     );
@@ -180,6 +201,7 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
       qty: d.cantidad,
       unitPrice: Number(d.precio_unitario),
       kind: d.tipo_item === "SERVICIO" ? "labor" : "part",
+      detalle: d.detalle || "",
     }));
 
     // Desestructurar observaciones JSON si aplica
@@ -224,12 +246,19 @@ router.post(
       return;
     }
 
+    // Filtrar líneas válidas (descartar líneas vacías)
+    const validLines = lines.filter((l: any) => l && l.description && String(l.description).trim().length > 0);
+    if (validLines.length === 0) {
+      res.status(400).json({ message: "Debe incluir al menos un ítem con descripción en la proforma" });
+      return;
+    }
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
       // 1. Calcular monto total (subtotal, descuento, iva)
-      const subtotal = lines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
+      const subtotal = validLines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 1) * (Number(l.unitPrice) || 0), 0);
       const discountAmount = (subtotal * (Number(discount) || 0)) / 100;
       const taxable = subtotal - discountAmount;
       const taxAmount = (taxable * (Number(taxRate) || 0)) / 100;
@@ -257,10 +286,17 @@ router.post(
       );
       const idProforma = (proformaResult as any).insertId;
 
-      // 4. Guardar líneas de detalle
-      for (const line of lines) {
-        // Encontrar o crear el item en la BD
-        const idItem = await findOrCreateItem(connection, line.description, line.kind, Number(line.unitPrice) || 0, line.code);
+      // 5. Guardar líneas de detalle
+      for (const line of validLines) {
+        // Encontrar o crear el item en la BD y guardar su detalle
+        const idItem = await findOrCreateItem(
+          connection,
+          line.description,
+          line.kind,
+          Number(line.unitPrice) || 0,
+          line.code,
+          line.detalle
+        );
 
         await connection.query(
           "INSERT INTO detalles_proforma (id_proforma, id_item, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
@@ -299,6 +335,12 @@ router.put(
       return;
     }
 
+    const validLines = lines.filter((l: any) => l && l.description && String(l.description).trim().length > 0);
+    if (validLines.length === 0) {
+      res.status(400).json({ message: "Debe incluir al menos un ítem con descripción en la proforma" });
+      return;
+    }
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -311,7 +353,7 @@ router.put(
       }
 
       // 1. Calcular monto total
-      const subtotal = lines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
+      const subtotal = validLines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 1) * (Number(l.unitPrice) || 0), 0);
       const discountAmount = (subtotal * (Number(discount) || 0)) / 100;
       const taxable = subtotal - discountAmount;
       const taxAmount = (taxable * (Number(taxRate) || 0)) / 100;
@@ -340,8 +382,15 @@ router.put(
       await connection.query("DELETE FROM detalles_proforma WHERE id_proforma = ?", [id]);
 
       // 4. Insertar detalles nuevos
-      for (const line of lines) {
-        const idItem = await findOrCreateItem(connection, line.description, line.kind, Number(line.unitPrice) || 0, line.code);
+      for (const line of validLines) {
+        const idItem = await findOrCreateItem(
+          connection,
+          line.description,
+          line.kind,
+          Number(line.unitPrice) || 0,
+          line.code,
+          line.detalle
+        );
 
         await connection.query(
           "INSERT INTO detalles_proforma (id_proforma, id_item, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",

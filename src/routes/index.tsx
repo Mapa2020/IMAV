@@ -31,10 +31,22 @@ import { Toaster } from "@/components/ui/sonner";
 import { ProformaDocument } from "@/components/proforma/ProformaDocument";
 import { Stepper, type Step } from "@/components/proforma/Stepper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth, API_URL } from "@/hooks/useAuth";
 import { ItemAutocomplete } from "@/components/proforma/ItemAutocomplete";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BrandModelCombobox } from "@/components/vehicle/BrandModelCombobox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Import CRUDs
 import { ClientCRUD } from "@/components/crud/ClientCRUD";
@@ -45,11 +57,11 @@ import { ItemCRUD } from "@/components/crud/ItemCRUD";
 import { EmployeeCRUD } from "@/components/crud/EmployeeCRUD";
 import { MaintenanceCRUD } from "@/components/crud/MaintenanceCRUD";
 import { UserCRUD } from "@/components/crud/UserCRUD";
+import { ReportCRUD } from "@/components/reports/ReportCRUD";
 
 import {
   CHECKLIST,
   FUEL_TYPES,
-  SUGGESTED_SERVICES,
   currency,
   totals,
   type Proforma,
@@ -90,7 +102,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 
 const initial: Proforma = {
   clientName: "",
-  clientPhone: "",
+  clientPhone: "+591",
   clientDoc: "",
   plate: "",
   brand: "",
@@ -150,6 +162,8 @@ function Index() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<Proforma>(initial);
   const [checked, setChecked] = useState<string[]>([]);
+  const [docType, setDocType] = useState<"CI" | "NIT" | "EXTRANJERO">("CI");
+  const [country, setCountry] = useState("");
 
   // Autocomplete / Search client
   const [clientSearchText, setClientSearchText] = useState("");
@@ -176,19 +190,19 @@ function Index() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await fetch(`${API_URL}/employees`, { headers });
         if (res.ok) {
           const data = await res.json();
           setEmployees(data);
-          
+
           // Pre-seleccionar el primer receptor si hay
           const receptor = data.find((e: any) => e.rol === "RECEPCIONISTA");
           if (receptor) {
             setReceptionistId(receptor.id_empleado.toString());
             set("receivedBy", `${receptor.nombre} ${receptor.paterno}`);
           }
-          
+
           // Pre-seleccionar el primer mecánico
           const mecanico = data.find((e: any) => e.rol === "MECANICO");
           if (mecanico) {
@@ -211,9 +225,12 @@ function Index() {
 
     const delayDebounce = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/clients?query=${encodeURIComponent(clientSearchText)}`, {
-          headers: token ? { "Authorization": `Bearer ${token}` } : {},
-        });
+        const res = await fetch(
+          `${API_URL}/clients?query=${encodeURIComponent(clientSearchText)}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+        );
         if (res.ok) {
           const results = await res.json();
           setClientSearchResults(results);
@@ -230,17 +247,33 @@ function Index() {
     setSelectedClient(client);
     setClientSearchResults([]);
     setClientSearchText(client.nombre);
-    
+
     // Auto-completar datos del cliente
     set("clientName", client.nombre);
-    set("clientPhone", client.telefono || "");
+
+    // WhatsApp format with +591
+    let phoneVal = client.telefono || "";
+    if (phoneVal) {
+      const cleanPhone = phoneVal.replace(/\s+/g, "").replace(/\+/g, "");
+      phoneVal = cleanPhone.startsWith("591")
+        ? `+${cleanPhone}`
+        : `+591${cleanPhone}`;
+    } else {
+      phoneVal = "+591";
+    }
+    set("clientPhone", phoneVal);
     set("clientDoc", client.ci || client.nit || client.pasaporte || "");
+    setDocType(client.tipo_cliente);
+    setCountry(client.pais_origen || "");
 
     // Cargar los vehículos registrados de este cliente
     try {
-      const res = await fetch(`${API_URL}/vehicles?id_cliente=${client.id_cliente}`, {
-        headers: token ? { "Authorization": `Bearer ${token}` } : {},
-      });
+      const res = await fetch(
+        `${API_URL}/vehicles?id_cliente=${client.id_cliente}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
       if (res.ok) {
         const vehicles = await res.json();
         setClientVehicles(vehicles);
@@ -287,6 +320,7 @@ function Index() {
           qty: preset?.qty ?? 1,
           unitPrice: preset?.unitPrice ?? 0,
           kind: preset?.kind ?? "labor",
+          detalle: preset?.detalle ?? "",
         },
       ],
     }));
@@ -303,13 +337,17 @@ function Index() {
   // Finalizar y Guardar Proforma en Base de Datos
   const handleSaveAll = async () => {
     if (isReadOnly) {
-      toast.error("Debe iniciar sesión para poder guardar registros en el sistema");
+      toast.error(
+        "Debe iniciar sesión para poder guardar registros en el sistema",
+      );
       navigate({ to: "/login" });
       return;
     }
 
     if (!data.clientName || !data.clientDoc) {
-      toast.error("Por favor, ingrese el nombre y documento del cliente (Paso 1)");
+      toast.error(
+        "Por favor, ingrese el nombre y documento del cliente (Paso 1)",
+      );
       setStep(1);
       return;
     }
@@ -319,7 +357,9 @@ function Index() {
       return;
     }
     if (!receptionistId) {
-      toast.error("Por favor, seleccione la persona que recibe el vehículo (Paso 3)");
+      toast.error(
+        "Por favor, seleccione la persona que recibe el vehículo (Paso 3)",
+      );
       setStep(3);
       return;
     }
@@ -330,40 +370,46 @@ function Index() {
     }
 
     if (!data.complaint) {
-      toast.error("Por favor, ingrese la falla reportada por el cliente (Paso 3)");
+      toast.error(
+        "Por favor, ingrese la falla reportada por el cliente (Paso 3)",
+      );
       setStep(3);
       return;
     }
     if (data.lines.length === 0) {
-      toast.error("La proforma debe contener al menos un servicio o repuesto (Paso 4)");
+      toast.error(
+        "La proforma debe contener al menos un servicio o repuesto (Paso 4)",
+      );
       setStep(4);
       return;
     }
 
-    toast.loading("Guardando registro en la base de datos...", { id: "save-proforma" });
+    toast.loading("Guardando registro en la base de datos...", {
+      id: "save-proforma",
+    });
 
     try {
       let finalClientId = selectedClient?.id_cliente;
 
       // 1. Guardar cliente si es nuevo o no estaba seleccionado
       if (!finalClientId) {
-        // Deduzco tipo_cliente por los campos o dejo CI por defecto
         const docText = data.clientDoc.trim();
-        const tipoCliente = docText.length > 10 ? "NIT" : "CI";
-
         const clientRes = await fetch(`${API_URL}/clients`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            tipo_cliente: tipoCliente,
+            tipo_cliente: docType,
             nombre: data.clientName,
             telefono: data.clientPhone || null,
             direccion: null,
-            ci: tipoCliente === "CI" ? docText : null,
-            nit: tipoCliente === "NIT" ? docText : null,
+            ci: docType === "CI" ? docText : null,
+            nit: docType === "NIT" ? docText : null,
+            pasaporte: docType === "EXTRANJERO" ? docText : null,
+            pais_origen:
+              docType === "EXTRANJERO" ? country.trim() || "Extranjero" : null,
           }),
         });
 
@@ -382,7 +428,7 @@ function Index() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             id_cliente: finalClientId,
@@ -396,7 +442,9 @@ function Index() {
 
         if (!vehicleRes.ok) {
           const err = await vehicleRes.json();
-          throw new Error(err.message || "Error al crear vehículo (Verifique la placa)");
+          throw new Error(
+            err.message || "Error al crear vehículo (Verifique la placa)",
+          );
         }
         const newVehicle = await vehicleRes.json();
         finalVehicleId = newVehicle.id_vehiculo;
@@ -408,7 +456,7 @@ function Index() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id_vehiculo: finalVehicleId,
@@ -435,7 +483,7 @@ function Index() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id_ingreso: finalIngresoId,
@@ -453,17 +501,21 @@ function Index() {
       }
       const newProforma = await proformaRes.json();
 
-      toast.success("¡Proforma guardada exitosamente en la base de datos!", { id: "save-proforma" });
-      
+      toast.success("¡Proforma guardada exitosamente en la base de datos!", {
+        id: "save-proforma",
+      });
+
       // Limpiar formulario y redireccionar a vista individual
       setData(initial);
       setChecked([]);
       setSelectedClient(null);
       setSelectedVehicle(null);
-      
+
       navigate({ to: `/proforma/${newProforma.id_proforma}` });
     } catch (error: any) {
-      toast.error(error.message || "Ocurrió un error inesperado al guardar", { id: "save-proforma" });
+      toast.error(error.message || "Ocurrió un error inesperado al guardar", {
+        id: "save-proforma",
+      });
     }
   };
 
@@ -475,9 +527,17 @@ function Index() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1650px] items-center justify-between gap-6 px-5 lg:px-8">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="IMAV Motor" width={40} height={40} className="size-[40px]" />
+            <img
+              src={logo}
+              alt="IMAV Motor"
+              width={40}
+              height={40}
+              className="size-[40px]"
+            />
             <div className="leading-tight">
-              <p className="font-display text-lg font-semibold tracking-[0.14em]">IMAV MOTOR S.R.L.</p>
+              <p className="font-display text-lg font-semibold tracking-[0.14em]">
+                IMAV MOTOR S.R.L.
+              </p>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Servicio Automotriz
               </p>
@@ -488,10 +548,19 @@ function Index() {
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-semibold">{user.nombre_completo}</p>
-                  <p className="text-[9px] uppercase tracking-wider text-primary font-bold">{user.rol}</p>
+                  <p className="text-xs font-semibold">
+                    {user.nombre_completo}
+                  </p>
+                  <p className="text-[9px] uppercase tracking-wider text-primary font-bold">
+                    {user.rol}
+                  </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={logout} title="Cerrar Sesión">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={logout}
+                  title="Cerrar Sesión"
+                >
                   <LogOut className="size-4 text-destructive" />
                 </Button>
               </div>
@@ -507,21 +576,30 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-[1650px] px-5 py-8 lg:px-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
             <div>
-              <h1 className="font-display text-3xl font-semibold tracking-tight">Panel de Gestión de Taller</h1>
-              <p className="text-sm text-muted-foreground mt-1">Ingreso, estimaciones y control de servicios.</p>
+              <h1 className="font-display text-3xl font-semibold tracking-tight">
+                Panel de Gestión de Taller
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ingreso, estimaciones y control de servicios.
+              </p>
             </div>
             <TabsList className="bg-muted/70 p-1 flex-wrap h-auto gap-y-1">
               <TabsTrigger value="proforma-flow">Nueva Proforma</TabsTrigger>
               <TabsTrigger value="proformas">Proformas</TabsTrigger>
+              <TabsTrigger value="reports">Informes</TabsTrigger>
               <TabsTrigger value="receptions">Ingresos</TabsTrigger>
               <TabsTrigger value="clients">Clientes</TabsTrigger>
               <TabsTrigger value="vehicles">Vehículos</TabsTrigger>
-              
+
               <div className="w-[1px] h-5 bg-border mx-1 shrink-0 self-center hidden xs:block" />
-              
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -529,7 +607,9 @@ function Index() {
                       <Package className="size-4" />
                     </TabsTrigger>
                   </TooltipTrigger>
-                  <TooltipContent>Gestión de Items (Repuestos y Servicios)</TooltipContent>
+                  <TooltipContent>
+                    Gestión de Items (Repuestos y Servicios)
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
@@ -564,7 +644,9 @@ function Index() {
                           <UserCog className="size-4" />
                         </TabsTrigger>
                       </TooltipTrigger>
-                      <TooltipContent>Gestión de Usuarios del Sistema</TooltipContent>
+                      <TooltipContent>
+                        Gestión de Usuarios del Sistema
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </>
@@ -588,16 +670,20 @@ function Index() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                        <User className="size-4 text-primary" /> Datos del cliente
+                        <User className="size-4 text-primary" /> Datos del
+                        cliente
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Busque un cliente registrado por su nombre/documento o digite uno nuevo.
+                        Busque un cliente registrado por su nombre/documento o
+                        digite uno nuevo.
                       </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="sm:col-span-2 relative">
-                        <Label className="label-caps">Buscar Cliente Existente (Autocompletar)</Label>
+                        <Label className="label-caps">
+                          Buscar Cliente Existente (Autocompletar)
+                        </Label>
                         <div className="relative mt-2">
                           <Search className="absolute inset-y-0 left-3 my-auto size-4 text-muted-foreground" />
                           <Input
@@ -630,7 +716,8 @@ function Index() {
                                   >
                                     <p className="font-medium">{c.nombre}</p>
                                     <p className="text-xs text-muted-foreground">
-                                      CI: {c.ci || "—"} | NIT: {c.nit || "—"} | Tel: {c.telefono || "—"}
+                                      CI: {c.ci || "—"} | NIT: {c.nit || "—"} |
+                                      Tel: {c.telefono || "—"}
                                     </p>
                                   </button>
                                 </li>
@@ -642,21 +729,31 @@ function Index() {
 
                       {selectedClient && (
                         <div className="sm:col-span-2 rounded-lg bg-primary/10 border border-primary/20 p-3 text-xs text-primary flex justify-between items-center">
-                          <span>Cliente seleccionado: <strong>{selectedClient.nombre}</strong></span>
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => {
-                            setSelectedClient(null);
-                            setClientSearchText("");
-                            setSelectedVehicle(null);
-                            setClientVehicles([]);
-                            setData(initial);
-                          }}>
+                          <span>
+                            Cliente seleccionado:{" "}
+                            <strong>{selectedClient.nombre}</strong>
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => {
+                              setSelectedClient(null);
+                              setClientSearchText("");
+                              setSelectedVehicle(null);
+                              setClientVehicles([]);
+                              setData(initial);
+                            }}
+                          >
                             Limpiar
                           </Button>
                         </div>
                       )}
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">Nombre o Razón Social</Label>
+                        <Label className="label-caps">
+                          Nombre o Razón Social
+                        </Label>
                         <Input
                           value={data.clientName}
                           onChange={(e) => set("clientName", e.target.value)}
@@ -666,23 +763,86 @@ function Index() {
                       </div>
 
                       <div>
-                        <Label className="label-caps">WhatsApp del Cliente</Label>
+                        <Label className="label-caps">
+                          WhatsApp del Cliente
+                        </Label>
                         <Input
                           value={data.clientPhone}
-                          onChange={(e) => set("clientPhone", e.target.value)}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (!val.startsWith("+591")) {
+                              if (val.length < 4) {
+                                val = "+591";
+                              } else {
+                                val = "+591" + val.replace(/^\+?591?/, "");
+                              }
+                            }
+                            set("clientPhone", val);
+                          }}
                           placeholder="+591 70012345"
-                          className="mt-2"
+                          className="mt-2 font-mono"
                         />
                       </div>
-                      
-                      <div>
-                        <Label className="label-caps">CI / NIT / PAS</Label>
-                        <Input
-                          value={data.clientDoc}
-                          onChange={(e) => set("clientDoc", e.target.value)}
-                          placeholder="4728193 SC"
-                          className="mt-2"
-                        />
+
+                      <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/10 pt-4 mt-2">
+                        <div>
+                          <Label className="label-caps">Tipo Documento</Label>
+                          <Select
+                            value={docType}
+                            onValueChange={(
+                              val: "CI" | "NIT" | "EXTRANJERO",
+                            ) => {
+                              setDocType(val);
+                            }}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue placeholder="Seleccione Tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CI">
+                                Cédula de Identidad (CI)
+                              </SelectItem>
+                              <SelectItem value="NIT">NIT / Factura</SelectItem>
+                              <SelectItem value="EXTRANJERO">
+                                Pasaporte (Extranjero)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="label-caps">
+                            {docType === "CI"
+                              ? "Nro. CI"
+                              : docType === "NIT"
+                                ? "Nro. NIT"
+                                : "Nro. Pasaporte"}
+                          </Label>
+                          <Input
+                            value={data.clientDoc}
+                            onChange={(e) => set("clientDoc", e.target.value)}
+                            placeholder={
+                              docType === "CI"
+                                ? "1234567 SC"
+                                : docType === "NIT"
+                                  ? "1029384756"
+                                  : "PE987654"
+                            }
+                            className="mt-2 font-mono"
+                          />
+                        </div>
+
+                        {docType === "EXTRANJERO" && (
+                          <div>
+                            <Label className="label-caps">País de Origen</Label>
+                            <Input
+                              value={country}
+                              onChange={(e) => setCountry(e.target.value)}
+                              placeholder="Argentina"
+                              className="mt-2"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -692,7 +852,8 @@ function Index() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                        <Car className="size-4 text-primary" /> Registro del vehículo
+                        <Car className="size-4 text-primary" /> Registro del
+                        vehículo
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
                         Identificación técnica del vehículo.
@@ -701,7 +862,9 @@ function Index() {
 
                     {selectedClient && clientVehicles.length > 0 && (
                       <div className="space-y-3 rounded-lg border border-border p-4 bg-muted/20">
-                        <Label className="label-caps">Vehículos Registrados del Cliente</Label>
+                        <Label className="label-caps">
+                          Vehículos Registrados del Cliente
+                        </Label>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {clientVehicles.map((v) => (
                             <button
@@ -711,11 +874,11 @@ function Index() {
                                 setIsNewVehicle(false);
                                 selectVehicle(v);
                               }}
-                              className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
-                                !isNewVehicle && selectedVehicle?.id_vehiculo === v.id_vehiculo
-                                  ? "border-primary bg-primary/10 text-foreground font-semibold"
-                                  : "border-border text-muted-foreground hover:bg-surface-2"
-                              }`}
+                              className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${!isNewVehicle &&
+                                selectedVehicle?.id_vehiculo === v.id_vehiculo
+                                ? "border-primary bg-primary/10 text-foreground font-semibold"
+                                : "border-border text-muted-foreground hover:bg-surface-2"
+                                }`}
                             >
                               {v.marca} {v.modelo} [{v.placa}]
                             </button>
@@ -727,11 +890,10 @@ function Index() {
                               setSelectedVehicle(null);
                               clearVehicleFields();
                             }}
-                            className={`rounded-lg border border-dashed px-3 py-2 text-xs transition-colors ${
-                              isNewVehicle
-                                ? "border-primary bg-primary/10 text-foreground font-semibold"
-                                : "border-border text-muted-foreground hover:bg-surface-2"
-                            }`}
+                            className={`rounded-lg border border-dashed px-3 py-2 text-xs transition-colors ${isNewVehicle
+                              ? "border-primary bg-primary/10 text-foreground font-semibold"
+                              : "border-border text-muted-foreground hover:bg-surface-2"
+                              }`}
                           >
                             + Registrar Nuevo Vehículo
                           </button>
@@ -744,33 +906,15 @@ function Index() {
                         <Label className="label-caps">Placa</Label>
                         <Input
                           value={data.plate}
-                          onChange={(e) => set("plate", e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            set("plate", e.target.value.toUpperCase())
+                          }
                           placeholder="3412 ABC"
                           className="font-mono uppercase mt-2"
                           disabled={!isNewVehicle}
                         />
                       </div>
 
-                      <div>
-                        <Label className="label-caps">Marca</Label>
-                        <Input
-                          value={data.brand}
-                          onChange={(e) => set("brand", e.target.value)}
-                          placeholder="Toyota"
-                          className="mt-2"
-                          disabled={!isNewVehicle}
-                        />
-                      </div>
-                      <div>
-                        <Label className="label-caps">Modelo</Label>
-                        <Input
-                          value={data.model}
-                          onChange={(e) => set("model", e.target.value)}
-                          placeholder="Hilux"
-                          className="mt-2"
-                          disabled={!isNewVehicle}
-                        />
-                      </div>
                       <div>
                         <Label className="label-caps">Año</Label>
                         <Input
@@ -782,11 +926,27 @@ function Index() {
                           disabled={!isNewVehicle}
                         />
                       </div>
+
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">Chasis / VIN (Opcional)</Label>
+                        <BrandModelCombobox
+                          brand={data.brand}
+                          model={data.model}
+                          onBrandChange={(val) => set("brand", val)}
+                          onModelChange={(val) => set("model", val)}
+                          disabled={!isNewVehicle}
+                          token={token}
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <Label className="label-caps">
+                          Chasis / VIN (Opcional)
+                        </Label>
                         <Input
                           value={data.vin}
-                          onChange={(e) => set("vin", e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            set("vin", e.target.value.toUpperCase())
+                          }
                           placeholder="MR0FZ29G50123456"
                           className="font-mono uppercase mt-2"
                           disabled={!isNewVehicle}
@@ -800,49 +960,69 @@ function Index() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                        <ClipboardCheck className="size-4 text-primary" /> Ingreso en taller
+                        <ClipboardCheck className="size-4 text-primary" />{" "}
+                        Ingreso en taller
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Quién recibe, qué mecánico se asigna y estado general de ingreso.
+                        Quién recibe, qué mecánico se asigna y estado general de
+                        ingreso.
                       </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="label-caps">Recibido por (Receptor)</Label>
+                        <Label className="label-caps">
+                          Recibido por (Receptor)
+                        </Label>
                         <Select
                           value={receptionistId}
                           onValueChange={(val) => {
                             setReceptionistId(val);
-                            const emp = employees.find((e) => e.id_empleado.toString() === val);
-                            if (emp) set("receivedBy", `${emp.nombre} ${emp.paterno}`);
+                            const emp = employees.find(
+                              (e) => e.id_empleado.toString() === val,
+                            );
+                            if (emp)
+                              set("receivedBy", `${emp.nombre} ${emp.paterno}`);
                           }}
                         >
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Seleccione receptor" />
                           </SelectTrigger>
                           <SelectContent>
-                            {employees.filter((e) => e.rol === "RECEPCIONISTA").map((emp) => (
-                              <SelectItem key={emp.id_empleado} value={emp.id_empleado.toString()}>
-                                {emp.nombre} {emp.paterno}
-                              </SelectItem>
-                            ))}
+                            {employees
+                              .filter((e) => e.rol === "RECEPCIONISTA")
+                              .map((emp) => (
+                                <SelectItem
+                                  key={emp.id_empleado}
+                                  value={emp.id_empleado.toString()}
+                                >
+                                  {emp.nombre} {emp.paterno}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div>
                         <Label className="label-caps">Mecánico Asignado</Label>
-                        <Select value={mechanicId} onValueChange={setMechanicId}>
+                        <Select
+                          value={mechanicId}
+                          onValueChange={setMechanicId}
+                        >
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Seleccione mecánico asignado" />
                           </SelectTrigger>
                           <SelectContent>
-                            {employees.filter((e) => e.rol === "MECANICO").map((emp) => (
-                              <SelectItem key={emp.id_empleado} value={emp.id_empleado.toString()}>
-                                {emp.nombre} {emp.paterno}
-                              </SelectItem>
-                            ))}
+                            {employees
+                              .filter((e) => e.rol === "MECANICO")
+                              .map((emp) => (
+                                <SelectItem
+                                  key={emp.id_empleado}
+                                  value={emp.id_empleado.toString()}
+                                >
+                                  {emp.nombre} {emp.paterno}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -860,7 +1040,9 @@ function Index() {
                           <button
                             type="button"
                             onClick={() => {
-                              const el = document.getElementById("entry-date-input") as HTMLInputElement;
+                              const el = document.getElementById(
+                                "entry-date-input",
+                              ) as HTMLInputElement;
                               if (el && typeof el.showPicker === "function") {
                                 try {
                                   el.showPicker();
@@ -877,10 +1059,10 @@ function Index() {
                         </div>
                       </div>
 
-
-
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">Falla reportada por el cliente (Problema)</Label>
+                        <Label className="label-caps">
+                          Falla reportada por el cliente (Problema)
+                        </Label>
                         <Textarea
                           value={data.complaint}
                           onChange={(e) => set("complaint", e.target.value)}
@@ -891,7 +1073,9 @@ function Index() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">Observaciones de estado (Rayones, golpes, etc.)</Label>
+                        <Label className="label-caps">
+                          Observaciones de estado (Rayones, golpes, etc.)
+                        </Label>
                         <Textarea
                           value={data.notes}
                           onChange={(e) => set("notes", e.target.value)}
@@ -908,112 +1092,146 @@ function Index() {
                   <div className="space-y-6">
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
-                        <Wrench className="size-4 text-primary" /> Detalle de la proforma
+                        <Wrench className="size-4 text-primary" /> Detalle de la
+                        proforma
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
                         Costo estimado de mano de obra y repuestos.
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 bg-muted/20 p-3 rounded-lg">
-                      <span className="text-[10px] label-caps w-full mb-1 text-muted-foreground">Sugeridos comunes:</span>
-                      {SUGGESTED_SERVICES.map((s) => (
-                        <button
-                          key={s.description}
-                          type="button"
-                          onClick={() => addLine(s)}
-                          className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
-                        >
-                          + {s.description} (Bs {s.unitPrice})
-                        </button>
-                      ))}
-                    </div>
-
                     <div className="space-y-3 mt-4">
-                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr]">
+                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr]">
                         <span className="label-caps text-xs">Descripción</span>
-                        <span className="label-caps text-xs text-right">Cant.</span>
-                        <span className="label-caps text-xs text-right">P. Unit.</span>
+                        <span className="label-caps text-xs text-right">
+                          Cant.
+                        </span>
+                        <span className="label-caps text-xs text-right">
+                          P. Unit.
+                        </span>
                         <span className="label-caps text-xs">Tipo</span>
                         <span />
                       </div>
-                      
+
                       {data.lines.length === 0 && (
                         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                          Sin ítems agregados. Agregue uno manual o use los sugeridos.
+                          Sin ítems agregados. Agregue uno manual o use los
+                          sugeridos.
                         </p>
                       )}
 
                       {data.lines.map((l) => (
                         <div
                           key={l.id}
-                          className="grid gap-2 border-b border-border pb-3 sm:pb-0 sm:border-0 sm:grid-cols-[4fr_0.8fr_1.2fr_1.2fr_0.4fr] sm:items-center"
+                          className="p-3 rounded-lg border border-border/80 bg-surface-2/20 space-y-2.5"
                         >
-                          <ItemAutocomplete
-                            value={l.description}
-                            token={token}
-                            placeholder="Descripción del servicio o repuesto"
-                            onChange={(desc, code, price, kind) => {
-                              if (code) {
-                                const existingLine = data.lines.find(
-                                  (line) => line.id !== l.id && line.code === code
-                                );
-                                if (existingLine) {
-                                  updateLine(existingLine.id, { qty: existingLine.qty + l.qty });
-                                  removeLine(l.id);
-                                  toast.info(`El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`);
-                                  return;
+                          <div className="grid gap-3 sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] sm:items-center">
+                            <ItemAutocomplete
+                              value={l.description}
+                              token={token}
+                              placeholder="Descripción del servicio o repuesto"
+                              onChange={(desc, code, price, kind, detalle) => {
+                                if (code) {
+                                  const existingLine = data.lines.find(
+                                    (line) =>
+                                      line.id !== l.id && line.code === code,
+                                  );
+                                  if (existingLine) {
+                                    updateLine(existingLine.id, {
+                                      qty: existingLine.qty + l.qty,
+                                    });
+                                    removeLine(l.id);
+                                    toast.info(
+                                      `El ítem "${desc}" ya estaba en la proforma. Se incrementó su cantidad.`,
+                                    );
+                                    return;
+                                  }
+                                  updateLine(l.id, {
+                                    description: desc,
+                                    code: code,
+                                    unitPrice: price,
+                                    kind: kind,
+                                    detalle: detalle || l.detalle || "",
+                                  });
+                                } else {
+                                  updateLine(l.id, { description: desc });
                                 }
+                              }}
+                            />
+                            <Input
+                              type="number"
+                              value={l.qty}
+                              onChange={(e) =>
                                 updateLine(l.id, {
-                                  description: desc,
-                                  code: code,
-                                  unitPrice: price,
-                                  kind: kind,
-                                });
-                              } else {
-                                updateLine(l.id, { description: desc });
+                                  qty: Number(e.target.value) || 0,
+                                })
                               }
-                            }}
-                          />
-                          <Input
-                            type="number"
-                            value={l.qty}
-                            onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) || 0 })}
-                            className="text-right"
-                          />
-                          <Input
-                            type="number"
-                            value={l.unitPrice}
-                            onChange={(e) => updateLine(l.id, { unitPrice: Number(e.target.value) || 0 })}
-                            className="text-right"
-                          />
-                          <Select
-                            value={l.kind}
-                            onValueChange={(val: any) => updateLine(l.id, { kind: val })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="labor">Servicio</SelectItem>
-                              <SelectItem value="part">Repuesto</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeLine(l.id)}
-                            className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                              className="text-right px-2"
+                            />
+                            <Input
+                              type="number"
+                              value={l.unitPrice}
+                              onChange={(e) =>
+                                updateLine(l.id, {
+                                  unitPrice: Number(e.target.value) || 0,
+                                })
+                              }
+                              className="text-right"
+                            />
+                            <Select
+                              value={l.kind}
+                              onValueChange={(val: "labor" | "part") =>
+                                updateLine(l.id, { kind: val })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="labor">
+                                  Servicio
+                                </SelectItem>
+                                <SelectItem value="part">Repuesto</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeLine(l.id)}
+                              className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+
+                          {/* Campo para Explicación del item seleccionado */}
+                          <div className="flex items-center gap-2 pl-1 pt-1 border-t border-border/40">
+                            <span className="text-[11px] font-semibold text-foreground/80 shrink-0">
+                              ↳ Explicación:
+                            </span>
+                            <Input
+                              value={l.detalle || ""}
+                              onChange={(e) =>
+                                updateLine(l.id, { detalle: e.target.value })
+                              }
+                              placeholder="Explicación o mayor detalle del ítem (opcional)..."
+                              className="h-8 text-xs bg-background/50 text-foreground placeholder:text-muted-foreground/60"
+                            />
+                          </div>
                         </div>
                       ))}
 
-                      <Button variant="outline" onClick={() => addLine()} className="mt-2 w-full">
-                        <Plus className="size-4 mr-1" /> Agregar línea manual
-                      </Button>
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => addLine()}
+                          className="w-full sm:w-auto"
+                        >
+                          <Plus className="size-4 mr-1" /> Agregar línea de ítem
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="border-t border-border pt-5">
@@ -1022,7 +1240,9 @@ function Index() {
                         <Input
                           type="number"
                           value={data.discount}
-                          onChange={(e) => set("discount", Number(e.target.value) || 0)}
+                          onChange={(e) =>
+                            set("discount", Number(e.target.value) || 0)
+                          }
                           className="font-mono mt-2"
                         />
                       </div>
@@ -1044,7 +1264,8 @@ function Index() {
                     </Button>
                   ) : (
                     <Button onClick={handleSaveAll} disabled={isReadOnly}>
-                      <FileText className="size-4 mr-2" /> Guardar y Generar Proforma
+                      <FileText className="size-4 mr-2" /> Guardar y Generar
+                      Proforma
                     </Button>
                   )}
                 </div>
@@ -1058,7 +1279,9 @@ function Index() {
               {/* Vista previa en tiempo real */}
               <section className="xl:sticky xl:top-24 xl:self-start">
                 <div className="mb-3 px-1">
-                  <p className="label-caps text-xs">Vista previa del documento en tiempo real</p>
+                  <p className="label-caps text-xs">
+                    Vista previa del documento en tiempo real
+                  </p>
                 </div>
                 <div className="border border-border rounded-xl shadow-md overflow-hidden bg-card">
                   <ProformaDocument data={data} code={code} />
@@ -1070,6 +1293,11 @@ function Index() {
           {/* TAB 2: Proformas */}
           <TabsContent value="proformas">
             <ProformaCRUD />
+          </TabsContent>
+
+          {/* TAB: Informes Técnicos */}
+          <TabsContent value="reports">
+            <ReportCRUD />
           </TabsContent>
 
           {/* TAB 3: Recepciones */}
@@ -1114,7 +1342,8 @@ function Index() {
       </main>
 
       <footer className="mt-16 border-t border-border py-6 text-center text-xs text-muted-foreground">
-        IMAV Motor S.R.L. · Santa Cruz, Bolivia · ParionaSoft. Todos los derechos Reservados
+        IMAV Motor S.R.L. · Santa Cruz, Bolivia · ParionaSoft. Todos los
+        derechos Reservados
       </footer>
     </div>
   );

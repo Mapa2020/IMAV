@@ -11,6 +11,8 @@ import employeeRoutes from "./routes/empleados.js";
 import itemRoutes from "./routes/items.js";
 import backupRoutes from "./routes/backups.js";
 import userRoutes from "./routes/usuarios.js";
+import brandRoutes from "./routes/marcas.js";
+import reportRoutes from "./routes/informes.js";
 import { startBackupScheduler } from "./config/backupScheduler.js";
 
 dotenv.config();
@@ -35,12 +37,14 @@ startBackupScheduler();
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/vehicles", vehicleRoutes);
+app.use("/api/brands", brandRoutes);
 app.use("/api/receptions", receptionRoutes);
 app.use("/api/proformas", proformaRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/backups", backupRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
