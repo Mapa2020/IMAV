@@ -1,0 +1,11 @@
+node_modules
+backend
+Archivos
+data_base
+.git
+.github
+.output
+.tanstack
+.wrangler
+*.local
+npm-debug.log*

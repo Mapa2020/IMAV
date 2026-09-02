@@ -9,17 +9,29 @@ export async function dbInitAndSeed() {
   console.log("Iniciando verificación e inicialización de la base de datos...");
   let connection;
   try {
-    // Primero, crear una conexión temporal sin base de datos para asegurar que existe la BD
-    const tempConnection = await mysql.createConnection({
-      host: process.env.DB_HOST || "localhost",
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      port: parseInt(process.env.DB_PORT || "3306", 10),
-    });
+    // Intentar conectar con reintentos para asegurar que MySQL esté listo al arrancar en Docker
+    let tempConnection;
+    let retries = 12;
+    while (retries > 0) {
+      try {
+        tempConnection = await mysql.createConnection({
+          host: process.env.DB_HOST || "localhost",
+          user: process.env.DB_USER || "root",
+          password: process.env.DB_PASSWORD || "",
+          port: parseInt(process.env.DB_PORT || "3306", 10),
+        });
+        break;
+      } catch (connErr: any) {
+        retries--;
+        if (retries === 0) throw connErr;
+        console.log(`Esperando a que la base de datos esté lista para aceptar conexiones... (${retries} reintentos restantes)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
 
     const dbName = process.env.DB_NAME || "bd_imav";
-    await tempConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-    await tempConnection.end();
+    await tempConnection!.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    await tempConnection!.end();
     console.log(`Base de datos '${dbName}' verificada/creada.`);
 
     connection = await pool.getConnection();
@@ -31,10 +43,15 @@ export async function dbInitAndSeed() {
     if (tableList.length === 0) {
       console.log("No se encontraron tablas. Creando estructura desde init..sql...");
       
-      // Intentar leer init..sql
-      // Buscamos en data_base/init..sql a nivel del proyecto
-      const sqlPath = path.resolve("..", "data_base", "init..sql");
-      if (fs.existsSync(sqlPath)) {
+      // Buscamos en data_base/init.sql o init..sql a nivel del proyecto o local
+      const sqlPaths = [
+        path.resolve("..", "data_base", "init.sql"),
+        path.resolve("..", "data_base", "init..sql"),
+        path.resolve(".", "data_base", "init.sql"),
+        path.resolve(".", "init.sql"),
+      ];
+      const sqlPath = sqlPaths.find((p) => fs.existsSync(p));
+      if (sqlPath) {
         const sqlContent = fs.readFileSync(sqlPath, "utf8");
         
         // Quitar comentarios y separar por punto y coma
@@ -62,7 +79,7 @@ export async function dbInitAndSeed() {
         await connection.query("SET FOREIGN_KEY_CHECKS = 1");
         console.log("Estructura de base de datos creada exitosamente.");
       } else {
-        throw new Error(`No se encontró el archivo init..sql en la ruta: ${sqlPath}`);
+        throw new Error(`No se encontró el archivo init.sql en ninguna de las rutas: ${sqlPaths.join(", ")}`);
       }
     } else {
       console.log("Estructura de tablas detectada correctamente.");
