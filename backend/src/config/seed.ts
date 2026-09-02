@@ -43,10 +43,9 @@ export async function dbInitAndSeed() {
     if (tableList.length === 0) {
       console.log("No se encontraron tablas. Creando estructura desde init..sql...");
       
-      // Buscamos en data_base/init.sql o init..sql a nivel del proyecto o local
+      // Buscamos en data_base/init.sql a nivel del proyecto o local
       const sqlPaths = [
         path.resolve("..", "data_base", "init.sql"),
-        path.resolve("..", "data_base", "init..sql"),
         path.resolve(".", "data_base", "init.sql"),
         path.resolve(".", "init.sql"),
       ];
