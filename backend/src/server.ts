@@ -13,6 +13,7 @@ import backupRoutes from "./routes/backups.js";
 import userRoutes from "./routes/usuarios.js";
 import brandRoutes from "./routes/marcas.js";
 import reportRoutes from "./routes/informes.js";
+import templateRoutes from "./routes/plantillas.js";
 import { startBackupScheduler } from "./config/backupScheduler.js";
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/backups", backupRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/templates", templateRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

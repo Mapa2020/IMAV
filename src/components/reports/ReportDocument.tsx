@@ -133,6 +133,8 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
   const [scale, setScale] = useState(1);
   const [height, setHeight] = useState(1056);
 
+  const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
+
   useEffect(() => {
     const container = containerRef.current;
     const inner = innerRef.current;
@@ -374,14 +376,16 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
                       <br />
                       Servicio Integral Automotriz
                     </p>
-                    <div className="text-right sm:text-right shrink-0 flex flex-col gap-1">
-                      <p className="text-lg font-bold uppercase tracking-[0.18em] text-[#B87333] leading-none">
-                        Informe Técnico
-                      </p>
-                      <p className="font-mono text-sm font-bold text-slate-900 tracking-wider">
-                        {report.numero_informe || "INF-2026-001"}
-                      </p>
-                    </div>
+                    {!isLetter && (
+                      <div className="text-right sm:text-right shrink-0 flex flex-col gap-1">
+                        <p className="text-lg font-bold uppercase tracking-[0.18em] text-[#B87333] leading-none">
+                          Informe Técnico
+                        </p>
+                        <p className="font-mono text-sm font-bold text-slate-900 tracking-wider">
+                          {report.numero_informe || "INF-2026-001"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -454,8 +458,9 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
                     {report.contenido}
                   </div>
 
-                  {/* Costo estimado si aplica */}
-                  {report.costo_estimado !== undefined &&
+                  {/* Costo estimado si aplica (no se muestra en Cartas) */}
+                  {!isLetter &&
+                    report.costo_estimado !== undefined &&
                     report.costo_estimado !== null &&
                     report.costo_estimado > 0 && (
                       <div className="my-5 p-3.5 rounded-md bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900">

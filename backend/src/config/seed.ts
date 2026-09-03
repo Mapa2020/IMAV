@@ -330,6 +330,84 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo verificar o crear la tabla 'informes_tecnicos':", err.message);
     }
 
+    // Asegurar tabla de plantillas de documentos (informes y cartas)
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`plantillas_documentos\` (
+          \`id_plantilla\` int NOT NULL AUTO_INCREMENT,
+          \`tipo\` enum('INFORME','CARTA') NOT NULL DEFAULT 'INFORME',
+          \`titulo\` varchar(150) NOT NULL,
+          \`referencia\` varchar(255) NOT NULL,
+          \`contenido\` text NOT NULL,
+          \`costo_estimado\` decimal(10,2) DEFAULT NULL,
+          \`created_at\` timestamp DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id_plantilla\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log("Tabla 'plantillas_documentos' verificada/creada.");
+
+      // Sembrar plantillas iniciales si la tabla está vacía
+      const [tplCount] = await connection.query("SELECT COUNT(*) as count FROM plantillas_documentos");
+      if ((tplCount as any)[0].count === 0) {
+        console.log("Sembrando plantillas iniciales para informes y cartas...");
+        const initialTemplates = [
+          {
+            tipo: "INFORME",
+            titulo: "Problema en Caja de Dirección",
+            referencia: "INFORME PROBLEMA CAJA DE DIRECCION HIDRAULICA",
+            contenido: "Informamos que lamentablemente los daños que se originaron internamente en la caja de dirección no tienen arreglo.\n\nDicho repuesto o caja de dirección no se encuentra disponible como pieza nueva estándar.\n\nLa solución recomendada es adaptar una caja de dirección nueva compatible modificando las bases de los conductos de entrada y salida de aceite hidráulico. El trabajo se entregaría debidamente calibrado y garantizado.\n\nSolicitamos su aprobación para proceder con la provisión y el trabajo respectivo.",
+            costo_estimado: 7900,
+          },
+          {
+            tipo: "INFORME",
+            titulo: "Diagnóstico Electrónico e Inyección",
+            referencia: "INFORME DE DIAGNOSTICO COMPUTARIZADO Y SISTEMA DE INYECCION",
+            contenido: "Se procedió con el escaneo computarizado del sistema electrónico de motor (OBD-II), detectando códigos de falla relacionados con la presión de combustible y lectura errática en sensores de oxígeno.\n\nSe realizaron las siguientes pruebas en banco:\n1. Verificación de presión en riel de inyección.\n2. Limpieza ultrasónica y calibración de inyectores.\n3. Comprobación del sensor MAF y cuerpo de aceleración.\n\nSe recomienda el cambio de filtro de combustible y sustitución de sensor defectuoso para restablecer el rendimiento óptimo del motor.",
+            costo_estimado: 1450,
+          },
+          {
+            tipo: "INFORME",
+            titulo: "Sistema de Frenos y Suspensión",
+            referencia: "INFORME TECNICO REVISION DE FRENOS Y TREN DELANTERO",
+            contenido: "En la inspección técnica del sistema de suspensión y frenos se evidenció un desgaste severo en pastillas de freno delanteras y bujes de meseta con holgura excesiva.\n\nTrabajos recomendados para garantizar la seguridad del vehículo:\n- Rectificado de discos de freno y reemplazo de pastillas cerámicas.\n- Cambio de amortiguadores delanteros y bujes de barra estabilizadora.\n- Alineación computarizada y balanceo de neumáticos.",
+            costo_estimado: 2200,
+          },
+          {
+            tipo: "INFORME",
+            titulo: "Mantenimiento Preventivo Integral",
+            referencia: "INFORME DE MANTENIMIENTO PREVENTIVO Y SERVICIO GENERAL",
+            contenido: "Se completó satisfactoriamente el servicio de mantenimiento programado del vehículo, habiendo ejecutado los siguientes puntos de control:\n\n1. Cambio de aceite de motor y filtros (aceite, aire y cabina).\n2. Revisión de niveles de fluidos (frenos, dirección, refrigerante).\n3. Calibración de bujías y revisión del sistema de encendido.\n4. Ajuste de frenos y engrase de crucetas/tren motriz.\n\nEl vehículo se encuentra en óptimas condiciones de funcionamiento.",
+            costo_estimado: 950,
+          },
+          {
+            tipo: "CARTA",
+            titulo: "Solicitud de Aprobación de Trabajos",
+            referencia: "SOLICITUD DE APROBACION DE TRABAJOS MECANICOS",
+            contenido: "Por medio de la presente, nos dirigimos a ustedes con el propósito de poner en su conocimiento los requerimientos técnicos evidenciados durante la inspección preliminar de su motorizado.\n\nHabiéndose evaluado los componentes mecánicos respectivos, solicitamos cordialmente su debida autorización para proceder con los trabajos detallados en la cotización coordinada, con la finalidad de restablecer el óptimo funcionamiento y garantizar la seguridad del vehículo.\n\nQuedamos a su entera disposición ante cualquier consulta al respecto.",
+            costo_estimado: null,
+          },
+          {
+            tipo: "CARTA",
+            titulo: "Notificación de Entrega y Conformidad",
+            referencia: "ENTREGA DE VEHICULO Y CONSTANCIA DE SERVICIO",
+            contenido: "Mediante la presente, hacemos formal constancia de la conclusión de los trabajos y servicios mecánicos efectuados en sus instalaciones en el vehículo de su propiedad.\n\nLas pruebas de ruta y de funcionamiento han arrojado resultados satisfactorios, por lo que el motorizado se encuentra a su disposición para su correspondiente retiro de nuestras instalaciones.\n\nAgradecemos la confianza depositada en nuestro taller y en nuestro equipo técnico.",
+            costo_estimado: null,
+          },
+        ];
+
+        for (const tpl of initialTemplates) {
+          await connection.query(
+            "INSERT INTO plantillas_documentos (tipo, titulo, referencia, contenido, costo_estimado) VALUES (?, ?, ?, ?, ?)",
+            [tpl.tipo, tpl.titulo, tpl.referencia, tpl.contenido, tpl.costo_estimado]
+          );
+        }
+        console.log("Plantillas iniciales sembradas con éxito.");
+      }
+    } catch (err: any) {
+      console.warn("No se pudo verificar o crear la tabla 'plantillas_documentos':", err.message);
+    }
+
     // 2. Sembrar Empleados si no existen
     const [empleados] = await connection.query("SELECT COUNT(*) as count FROM empleados");
     if ((empleados as any)[0].count === 0) {

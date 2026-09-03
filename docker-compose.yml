@@ -4,9 +4,7 @@ services:
     container_name: imav-db
     restart: always
     command: >
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-imav_root_secure_2026}
       MYSQL_DATABASE: ${DB_NAME:-bd_imav}
@@ -18,7 +16,7 @@ services:
       - imav_db_data:/var/lib/mysql
       - ./data_base/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,7 +28,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: imav-backend:latest
+    image: mapadoc2025/imav-backend:latest
     container_name: imav-backend
     restart: always
     depends_on:
@@ -56,7 +54,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: imav-frontend:latest
+    image: mapadoc2025/imav-frontend:latest
     container_name: imav-frontend
     restart: always
     depends_on:

@@ -118,7 +118,8 @@ export function ItemAutocomplete({
           readOnly
           onClick={() => setIsOpen(!isOpen)}
           placeholder={placeholder}
-          className="w-full pr-10 text-xs sm:text-sm cursor-pointer select-none bg-transparent hover:bg-slate-50/10 transition-colors"
+          title={value}
+          className="w-full pr-10 text-sm sm:text-base font-medium cursor-pointer select-none bg-transparent hover:bg-slate-50/10 transition-colors h-10"
         />
         <button
           type="button"
@@ -132,7 +133,7 @@ export function ItemAutocomplete({
         </button>
       </div>
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg max-h-72 flex flex-col">
+        <div className="absolute z-50 mt-1 w-full min-w-[320px] rounded-md border border-slate-200 bg-white shadow-xl max-h-80 flex flex-col">
           <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
             <Input
               ref={searchInputRef}
@@ -140,16 +141,16 @@ export function ItemAutocomplete({
               placeholder="Buscar por descripción o código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-xs h-8 text-slate-900 bg-white placeholder:text-slate-400 border border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300"
+              className="w-full text-sm h-9 text-slate-900 bg-white placeholder:text-slate-400 border border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300"
             />
           </div>
-          <div className="overflow-y-auto flex-1 max-h-60">
+          <div className="overflow-y-auto flex-1 max-h-72">
             {isLoading ? (
-              <p className="p-3 text-xs text-center text-slate-500 animate-pulse">
+              <p className="p-3 text-sm text-center text-slate-500 animate-pulse">
                 Buscando ítems...
               </p>
             ) : suggestions.length === 0 ? (
-              <p className="p-3 text-xs text-center text-slate-500">
+              <p className="p-3 text-sm text-center text-slate-500">
                 No se encontraron ítems
               </p>
             ) : (
@@ -159,33 +160,33 @@ export function ItemAutocomplete({
                     <button
                       type="button"
                       onClick={() => handleSelect(item)}
-                      className="w-full rounded px-3 py-2 text-left text-xs hover:bg-slate-100 flex items-center justify-between"
+                      className="w-full rounded px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center justify-between transition-colors"
                     >
-                      <div className="text-left flex-1 min-w-0 pr-2">
-                        <p className="font-semibold text-slate-900 truncate">
+                      <div className="text-left flex-1 min-w-0 pr-3">
+                        <p className="font-semibold text-slate-900 text-sm sm:text-base leading-snug whitespace-normal break-words">
                           {item.descripcion}
                         </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-slate-500 font-mono">
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-slate-500 font-mono">
                             Código: {item.codigo}
                           </span>
                           {item.detalle && (
-                            <span className="text-[9px] bg-sky-50 text-sky-700 px-1 rounded border border-sky-200">
+                            <span className="text-[10px] bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded border border-sky-200 font-medium">
                               Tiene detalle
                             </span>
                           )}
                         </div>
                         {item.detalle && (
-                          <p className="text-[10px] text-slate-500 line-clamp-1 italic mt-0.5">
+                          <p className="text-xs text-slate-600 line-clamp-3 italic mt-1">
                             ↳ {item.detalle}
                           </p>
                         )}
                       </div>
                       <div className="text-right shrink-0 ml-2">
-                        <p className="font-medium font-mono text-amber-600">
+                        <p className="font-semibold font-mono text-amber-600 text-sm sm:text-base">
                           Bs {Number(item.precio || 0).toFixed(2)}
                         </p>
-                        <span className="inline-block rounded-sm bg-slate-100 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-slate-600 font-bold">
+                        <span className="inline-block rounded-sm bg-slate-100 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-slate-600 font-bold mt-0.5">
                           {item.tipo_item === "SERVICIO"
                             ? "Servicio"
                             : "Repuesto"}

@@ -93,7 +93,7 @@ export const Route = createFileRoute("/")({
 const STEPS: Step[] = [
   { id: 1, label: "Cliente", hint: "Datos de contacto" },
   { id: 2, label: "Vehículo", hint: "Ingreso y registro" },
-  { id: 3, label: "Ingreso", hint: "Checklist y responsables" },
+  { id: 3, label: "Datos Taller", hint: "Checklist y responsables" },
   { id: 4, label: "Proforma", hint: "Servicios y costos" },
 ];
 
@@ -663,7 +663,13 @@ function Index() {
               </div>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div
+              className={`grid gap-6 ${
+                step === 4
+                  ? "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]"
+                  : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+              }`}
+            >
               {/* Formulario */}
               <section className="panel p-6 lg:p-7">
                 {step === 1 && (
@@ -681,7 +687,7 @@ function Index() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="sm:col-span-2 relative">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Buscar Cliente Existente (Autocompletar)
                         </Label>
                         <div className="relative mt-2">
@@ -700,7 +706,7 @@ function Index() {
                                 set("clientName", e.target.value);
                               }
                             }}
-                            className="pl-9"
+                            className="pl-9 h-10 text-sm sm:text-base"
                           />
                         </div>
 
@@ -714,8 +720,8 @@ function Index() {
                                     onClick={() => selectClient(c)}
                                     className="w-full rounded px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                                   >
-                                    <p className="font-medium">{c.nombre}</p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="font-semibold text-sm sm:text-base">{c.nombre}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
                                       CI: {c.ci || "—"} | NIT: {c.nit || "—"} |
                                       Tel: {c.telefono || "—"}
                                     </p>
@@ -728,15 +734,15 @@ function Index() {
                       </div>
 
                       {selectedClient && (
-                        <div className="sm:col-span-2 rounded-lg bg-primary/10 border border-primary/20 p-3 text-xs text-primary flex justify-between items-center">
+                        <div className="sm:col-span-2 rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm text-primary flex justify-between items-center">
                           <span>
                             Cliente seleccionado:{" "}
-                            <strong>{selectedClient.nombre}</strong>
+                            <strong className="text-base">{selectedClient.nombre}</strong>
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs"
+                            className="h-7 px-2.5 text-xs font-medium"
                             onClick={() => {
                               setSelectedClient(null);
                               setClientSearchText("");
@@ -751,19 +757,19 @@ function Index() {
                       )}
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Nombre o Razón Social
                         </Label>
                         <Input
                           value={data.clientName}
                           onChange={(e) => set("clientName", e.target.value)}
                           placeholder="Juan Pérez Rocha"
-                          className="mt-2"
+                          className="mt-2 h-10 text-sm sm:text-base font-medium"
                         />
                       </div>
 
                       <div>
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           WhatsApp del Cliente
                         </Label>
                         <Input
@@ -780,13 +786,13 @@ function Index() {
                             set("clientPhone", val);
                           }}
                           placeholder="+591 70012345"
-                          className="mt-2 font-mono"
+                          className="mt-2 font-mono h-10 text-sm sm:text-base font-medium"
                         />
                       </div>
 
                       <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/10 pt-4 mt-2">
                         <div>
-                          <Label className="label-caps">Tipo Documento</Label>
+                          <Label className="label-caps text-xs font-bold">Tipo Documento</Label>
                           <Select
                             value={docType}
                             onValueChange={(
@@ -795,15 +801,15 @@ function Index() {
                               setDocType(val);
                             }}
                           >
-                            <SelectTrigger className="mt-2">
+                            <SelectTrigger className="mt-2 h-10 text-sm sm:text-base">
                               <SelectValue placeholder="Seleccione Tipo" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="CI">
+                              <SelectItem value="CI" className="text-sm">
                                 Cédula de Identidad (CI)
                               </SelectItem>
-                              <SelectItem value="NIT">NIT / Factura</SelectItem>
-                              <SelectItem value="EXTRANJERO">
+                              <SelectItem value="NIT" className="text-sm">NIT / Factura</SelectItem>
+                              <SelectItem value="EXTRANJERO" className="text-sm">
                                 Pasaporte (Extranjero)
                               </SelectItem>
                             </SelectContent>
@@ -811,7 +817,7 @@ function Index() {
                         </div>
 
                         <div>
-                          <Label className="label-caps">
+                          <Label className="label-caps text-xs font-bold">
                             {docType === "CI"
                               ? "Nro. CI"
                               : docType === "NIT"
@@ -828,18 +834,18 @@ function Index() {
                                   ? "1029384756"
                                   : "PE987654"
                             }
-                            className="mt-2 font-mono"
+                            className="mt-2 font-mono h-10 text-sm sm:text-base font-medium"
                           />
                         </div>
 
                         {docType === "EXTRANJERO" && (
                           <div>
-                            <Label className="label-caps">País de Origen</Label>
+                            <Label className="label-caps text-xs font-bold">País de Origen</Label>
                             <Input
                               value={country}
                               onChange={(e) => setCountry(e.target.value)}
                               placeholder="Argentina"
-                              className="mt-2"
+                              className="mt-2 h-10 text-sm sm:text-base"
                             />
                           </div>
                         )}
@@ -862,7 +868,7 @@ function Index() {
 
                     {selectedClient && clientVehicles.length > 0 && (
                       <div className="space-y-3 rounded-lg border border-border p-4 bg-muted/20">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Vehículos Registrados del Cliente
                         </Label>
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -874,13 +880,13 @@ function Index() {
                                 setIsNewVehicle(false);
                                 selectVehicle(v);
                               }}
-                              className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${!isNewVehicle &&
+                              className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${!isNewVehicle &&
                                 selectedVehicle?.id_vehiculo === v.id_vehiculo
                                 ? "border-primary bg-primary/10 text-foreground font-semibold"
                                 : "border-border text-muted-foreground hover:bg-surface-2"
                                 }`}
                             >
-                              {v.marca} {v.modelo} [{v.placa}]
+                              <span className="font-semibold">{v.marca} {v.modelo}</span> <span className="font-mono text-xs opacity-80">[{v.placa}]</span>
                             </button>
                           ))}
                           <button
@@ -890,7 +896,7 @@ function Index() {
                               setSelectedVehicle(null);
                               clearVehicleFields();
                             }}
-                            className={`rounded-lg border border-dashed px-3 py-2 text-xs transition-colors ${isNewVehicle
+                            className={`rounded-lg border border-dashed px-3 py-2 text-sm font-medium transition-colors ${isNewVehicle
                               ? "border-primary bg-primary/10 text-foreground font-semibold"
                               : "border-border text-muted-foreground hover:bg-surface-2"
                               }`}
@@ -903,26 +909,26 @@ function Index() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="label-caps">Placa</Label>
+                        <Label className="label-caps text-xs font-bold">Placa</Label>
                         <Input
                           value={data.plate}
                           onChange={(e) =>
                             set("plate", e.target.value.toUpperCase())
                           }
                           placeholder="3412 ABC"
-                          className="font-mono uppercase mt-2"
+                          className="font-mono uppercase mt-2 h-10 text-sm sm:text-base font-bold tracking-wider"
                           disabled={!isNewVehicle}
                         />
                       </div>
 
                       <div>
-                        <Label className="label-caps">Año</Label>
+                        <Label className="label-caps text-xs font-bold">Año</Label>
                         <Input
                           value={data.year}
                           onChange={(e) => set("year", e.target.value)}
                           placeholder="2019"
                           inputMode="numeric"
-                          className="mt-2"
+                          className="mt-2 h-10 text-sm sm:text-base font-medium"
                           disabled={!isNewVehicle}
                         />
                       </div>
@@ -939,7 +945,7 @@ function Index() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Chasis / VIN (Opcional)
                         </Label>
                         <Input
@@ -948,7 +954,7 @@ function Index() {
                             set("vin", e.target.value.toUpperCase())
                           }
                           placeholder="MR0FZ29G50123456"
-                          className="font-mono uppercase mt-2"
+                          className="font-mono uppercase mt-2 h-10 text-sm sm:text-base"
                           disabled={!isNewVehicle}
                         />
                       </div>
@@ -961,7 +967,7 @@ function Index() {
                     <div>
                       <h2 className="text-lg font-semibold leading-tight flex items-center gap-2">
                         <ClipboardCheck className="size-4 text-primary" />{" "}
-                        Ingreso en taller
+                        Datos del taller
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
                         Quién recibe, qué mecánico se asigna y estado general de
@@ -971,7 +977,7 @@ function Index() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Recibido por (Receptor)
                         </Label>
                         <Select
@@ -985,7 +991,7 @@ function Index() {
                               set("receivedBy", `${emp.nombre} ${emp.paterno}`);
                           }}
                         >
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10 text-sm sm:text-base">
                             <SelectValue placeholder="Seleccione receptor" />
                           </SelectTrigger>
                           <SelectContent>
@@ -995,6 +1001,7 @@ function Index() {
                                 <SelectItem
                                   key={emp.id_empleado}
                                   value={emp.id_empleado.toString()}
+                                  className="text-sm"
                                 >
                                   {emp.nombre} {emp.paterno}
                                 </SelectItem>
@@ -1004,12 +1011,12 @@ function Index() {
                       </div>
 
                       <div>
-                        <Label className="label-caps">Mecánico Asignado</Label>
+                        <Label className="label-caps text-xs font-bold">Mecánico Asignado</Label>
                         <Select
                           value={mechanicId}
                           onValueChange={setMechanicId}
                         >
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10 text-sm sm:text-base">
                             <SelectValue placeholder="Seleccione mecánico asignado" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1019,6 +1026,7 @@ function Index() {
                                 <SelectItem
                                   key={emp.id_empleado}
                                   value={emp.id_empleado.toString()}
+                                  className="text-sm"
                                 >
                                   {emp.nombre} {emp.paterno}
                                 </SelectItem>
@@ -1028,14 +1036,14 @@ function Index() {
                       </div>
 
                       <div>
-                        <Label className="label-caps">Fecha de ingreso</Label>
+                        <Label className="label-caps text-xs font-bold">Fecha de ingreso</Label>
                         <div className="relative mt-2">
                           <Input
                             id="entry-date-input"
                             type="date"
                             value={data.entryDate}
                             onChange={(e) => set("entryDate", e.target.value)}
-                            className="pl-10"
+                            className="pl-10 h-10 text-sm sm:text-base font-medium"
                           />
                           <button
                             type="button"
@@ -1060,7 +1068,7 @@ function Index() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Falla reportada por el cliente (Problema)
                         </Label>
                         <Textarea
@@ -1068,12 +1076,12 @@ function Index() {
                           onChange={(e) => set("complaint", e.target.value)}
                           placeholder="Ruido metálico en suspensión delantera al pasar badenes."
                           rows={3}
-                          className="mt-2"
+                          className="mt-2 text-sm sm:text-base"
                         />
                       </div>
 
                       <div className="sm:col-span-2">
-                        <Label className="label-caps">
+                        <Label className="label-caps text-xs font-bold">
                           Observaciones de estado (Rayones, golpes, etc.)
                         </Label>
                         <Textarea
@@ -1081,7 +1089,7 @@ function Index() {
                           onChange={(e) => set("notes", e.target.value)}
                           placeholder="Rayón leve en puerta trasera derecha."
                           rows={2}
-                          className="mt-2"
+                          className="mt-2 text-sm sm:text-base"
                         />
                       </div>
                     </div>
@@ -1101,15 +1109,15 @@ function Index() {
                     </div>
 
                     <div className="space-y-3 mt-4">
-                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr]">
-                        <span className="label-caps text-xs">Descripción</span>
-                        <span className="label-caps text-xs text-right">
+                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[1fr_85px_120px_135px_44px]">
+                        <span className="label-caps text-xs font-bold">Descripción del Ítem / Servicio</span>
+                        <span className="label-caps text-xs font-bold text-right">
                           Cant.
                         </span>
-                        <span className="label-caps text-xs text-right">
+                        <span className="label-caps text-xs font-bold text-right">
                           P. Unit.
                         </span>
-                        <span className="label-caps text-xs">Tipo</span>
+                        <span className="label-caps text-xs font-bold">Tipo</span>
                         <span />
                       </div>
 
@@ -1125,7 +1133,7 @@ function Index() {
                           key={l.id}
                           className="p-3 rounded-lg border border-border/80 bg-surface-2/20 space-y-2.5"
                         >
-                          <div className="grid gap-3 sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] sm:items-center">
+                          <div className="grid gap-2.5 sm:grid-cols-[1fr_85px_120px_135px_44px] sm:items-center">
                             <ItemAutocomplete
                               value={l.description}
                               token={token}
@@ -1166,7 +1174,7 @@ function Index() {
                                   qty: Number(e.target.value) || 0,
                                 })
                               }
-                              className="text-right px-2"
+                              className="text-right px-2 text-sm sm:text-base font-medium h-10"
                             />
                             <Input
                               type="number"
@@ -1176,7 +1184,7 @@ function Index() {
                                   unitPrice: Number(e.target.value) || 0,
                                 })
                               }
-                              className="text-right"
+                              className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10"
                             />
                             <Select
                               value={l.kind}
@@ -1184,14 +1192,14 @@ function Index() {
                                 updateLine(l.id, { kind: val })
                               }
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="h-10 text-sm">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="labor">
+                                <SelectItem value="labor" className="text-sm">
                                   Servicio
                                 </SelectItem>
-                                <SelectItem value="part">Repuesto</SelectItem>
+                                <SelectItem value="part" className="text-sm">Repuesto</SelectItem>
                               </SelectContent>
                             </Select>
 
@@ -1199,15 +1207,16 @@ function Index() {
                               variant="ghost"
                               size="icon"
                               onClick={() => removeLine(l.id)}
-                              className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto"
+                              className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-10"
+                              title="Eliminar ítem"
                             >
-                              <Trash2 className="size-4" />
+                              <Trash2 className="size-5" />
                             </Button>
                           </div>
 
                           {/* Campo para Explicación del item seleccionado */}
-                          <div className="flex items-center gap-2 pl-1 pt-1 border-t border-border/40">
-                            <span className="text-[11px] font-semibold text-foreground/80 shrink-0">
+                          <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
+                            <span className="text-xs font-semibold text-foreground/80 shrink-0">
                               ↳ Explicación:
                             </span>
                             <Input
@@ -1216,7 +1225,7 @@ function Index() {
                                 updateLine(l.id, { detalle: e.target.value })
                               }
                               placeholder="Explicación o mayor detalle del ítem (opcional)..."
-                              className="h-8 text-xs bg-background/50 text-foreground placeholder:text-muted-foreground/60"
+                              className="h-9 text-sm bg-background/50 text-foreground placeholder:text-muted-foreground/60"
                             />
                           </div>
                         </div>

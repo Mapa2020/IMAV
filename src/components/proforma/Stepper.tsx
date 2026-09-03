@@ -40,13 +40,13 @@ export function Stepper({
               <span className="hidden sm:block">
                 <span
                   className={cn(
-                    "block text-sm font-medium leading-none",
+                    "block text-sm sm:text-base font-semibold leading-none",
                     active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {step.label}
                 </span>
-                <span className="mt-1 block text-[11px] text-muted-foreground/70">{step.hint}</span>
+                <span className="mt-1 block text-xs text-muted-foreground/70">{step.hint}</span>
               </span>
             </button>
             {i < steps.length - 1 && <span className="h-px w-4 bg-border sm:w-8" />}

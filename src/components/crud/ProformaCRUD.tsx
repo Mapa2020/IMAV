@@ -291,11 +291,13 @@ export function ProformaCRUD() {
                       {code}
                     </TableCell>
                     <TableCell>{date.toLocaleDateString("es-BO")}</TableCell>
-                    <TableCell>{p.nombre_cliente}</TableCell>
-                    <TableCell className="font-mono text-xs font-semibold">
-                      {p.placa} ({p.marca} {p.modelo})
+                    <TableCell className="font-semibold text-sm sm:text-base text-foreground whitespace-normal">
+                      {p.nombre_cliente}
                     </TableCell>
-                    <TableCell className="font-mono font-medium text-xs">
+                    <TableCell className="font-mono text-sm sm:text-base font-bold text-foreground whitespace-normal">
+                      {p.placa} <span className="font-sans text-xs font-normal text-muted-foreground block sm:inline">({p.marca} {p.modelo})</span>
+                    </TableCell>
+                    <TableCell className="font-mono font-medium text-xs sm:text-sm">
                       Bs {currency(Number(p.monto_total))}
                     </TableCell>
                     <TableCell>
@@ -355,15 +357,15 @@ export function ProformaCRUD() {
 
       {/* Proforma Edit Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl w-[96vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Detalles e Ítems de Proforma</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Editar Detalles e Ítems de Proforma</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label className="label-caps">
+                <Label className="label-caps text-xs font-bold">
                   Detalle de Líneas de Estimación
                 </Label>
                 <div className="flex gap-2">
@@ -378,33 +380,33 @@ export function ProformaCRUD() {
                 </div>
               </div>
 
-              <div className="space-y-2.5 border border-border p-3 rounded-lg bg-surface-2/30">
-                <div className="hidden sm:grid sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] gap-3 mb-1 px-1">
-                  <span className="text-[10px] font-semibold label-caps">
-                    Descripción
+              <div className="space-y-2.5 border border-border p-3.5 rounded-lg bg-surface-2/30">
+                <div className="hidden sm:grid sm:grid-cols-[1fr_85px_120px_135px_44px] gap-3 mb-1 px-1">
+                  <span className="text-xs font-bold label-caps">
+                    Descripción del Ítem / Servicio
                   </span>
-                  <span className="text-[10px] font-semibold label-caps text-right">
+                  <span className="text-xs font-bold label-caps text-right">
                     Cant.
                   </span>
-                  <span className="text-[10px] font-semibold label-caps text-right">
+                  <span className="text-xs font-bold label-caps text-right">
                     P. Unit.
                   </span>
-                  <span className="text-[10px] font-semibold label-caps">
+                  <span className="text-xs font-bold label-caps">
                     Tipo
                   </span>
                   <span />
                 </div>
                 {lines.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground py-4">
+                  <p className="text-center text-sm text-muted-foreground py-6">
                     No hay líneas registradas en esta proforma
                   </p>
                 )}
                 {lines.map((l) => (
                   <div
                     key={l.id}
-                    className="p-2.5 rounded-md border border-border/70 bg-card/40 space-y-2"
+                    className="p-3 rounded-md border border-border/70 bg-card/50 space-y-2"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-[5fr_1fr_1.2fr_1.4fr_0.4fr] gap-2 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_85px_120px_135px_44px] gap-2.5 items-center">
                       <ItemAutocomplete
                         value={l.description}
                         token={token}
@@ -444,7 +446,7 @@ export function ProformaCRUD() {
                             qty: Number(e.target.value) || 0,
                           })
                         }
-                        className="text-right px-2"
+                        className="text-right px-2 text-sm sm:text-base font-medium h-10"
                       />
                       <Input
                         type="number"
@@ -454,7 +456,7 @@ export function ProformaCRUD() {
                             unitPrice: Number(e.target.value) || 0,
                           })
                         }
-                        className="text-right"
+                        className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10"
                       />
                       <Select
                         value={l.kind}
@@ -462,12 +464,12 @@ export function ProformaCRUD() {
                           updateLine(l.id, { kind: val })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="labor">Servicio</SelectItem>
-                          <SelectItem value="part">Repuesto</SelectItem>
+                          <SelectItem value="labor" className="text-sm">Servicio</SelectItem>
+                          <SelectItem value="part" className="text-sm">Repuesto</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
@@ -475,15 +477,16 @@ export function ProformaCRUD() {
                         variant="ghost"
                         size="icon"
                         onClick={() => removeLine(l.id)}
-                        className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto"
+                        className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-10"
+                        title="Eliminar ítem"
                       >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-5" />
                       </Button>
                     </div>
 
                     {/* Explicación del item */}
-                    <div className="flex items-center gap-2 pl-1 pt-1 border-t border-border/40">
-                      <span className="text-[10px] font-semibold text-foreground/80 shrink-0">
+                    <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
+                      <span className="text-xs font-semibold text-foreground/80 shrink-0">
                         ↳ Explicación:
                       </span>
                       <Input
@@ -492,7 +495,7 @@ export function ProformaCRUD() {
                           updateLine(l.id, { detalle: e.target.value })
                         }
                         placeholder="Explicación o mayor detalle del ítem (opcional)..."
-                        className="h-7 text-xs bg-background/50 text-foreground placeholder:text-muted-foreground/60"
+                        className="h-9 text-sm bg-background/50 text-foreground placeholder:text-muted-foreground/60"
                       />
                     </div>
                   </div>

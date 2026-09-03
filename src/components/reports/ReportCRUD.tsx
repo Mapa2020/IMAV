@@ -31,8 +31,10 @@ import {
   Sparkles,
   ArrowLeft,
   Save,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TemplateManagerModal, type DocumentTemplate } from "./TemplateManagerModal";
 import { ReportDocument, type TechnicalReport } from "./ReportDocument";
 
 interface Client {
@@ -53,64 +55,19 @@ interface Vehicle {
   color: string | null;
 }
 
-const TEMPLATES = [
-  {
-    title: "Problema en Caja de Dirección",
-    ref: "INFORME PROBLEMA CAJA DE DIRECCION HIDRAULICA",
-    content: `Informamos que lamentablemente los daños que se originaron internamente en la caja de dirección no tienen arreglo.
-
-Dicho repuesto o caja de dirección no se encuentra disponible como pieza nueva estándar.
-
-La solución recomendada es adaptar una caja de dirección nueva compatible modificando las bases de los conductos de entrada y salida de aceite hidráulico. El trabajo se entregaría debidamente calibrado y garantizado.
-
-Solicitamos su aprobación para proceder con la provisión y el trabajo respectivo.`,
-    cost: "7900",
-  },
-  {
-    title: "Diagnóstico Electrónico e Inyección",
-    ref: "INFORME DE DIAGNOSTICO COMPUTARIZADO Y SISTEMA DE INYECCION",
-    content: `Se procedió con el escaneo computarizado del sistema electrónico de motor (OBD-II), detectando códigos de falla relacionados con la presión de combustible y lectura errática en sensores de oxígeno.
-
-Se realizaron las siguientes pruebas en banco:
-1. Verificación de presión en riel de inyección.
-2. Limpieza ultrasónica y calibración de inyectores.
-3. Comprobación del sensor MAF y cuerpo de aceleración.
-
-Se recomienda el cambio de filtro de combustible y sustitución de sensor defectuoso para restablecer el rendimiento óptimo del motor.`,
-    cost: "1450",
-  },
-  {
-    title: "Sistema de Frenos y Suspensión",
-    ref: "INFORME TECNICO REVISION DE FRENOS Y TREN DELANTERO",
-    content: `En la inspección técnica del sistema de suspensión y frenos se evidenció un desgaste severo en pastillas de freno delanteras y bujes de meseta con holgura excesiva.
-
-Trabajos recomendados para garantizar la seguridad del vehículo:
-- Rectificado de discos de freno y reemplazo de pastillas cerámicas.
-- Cambio de amortiguadores delanteros y bujes de barra estabilizadora.
-- Alineación computarizada y balanceo de neumáticos.`,
-    cost: "2200",
-  },
-  {
-    title: "Mantenimiento Preventivo Integral",
-    ref: "INFORME DE MANTENIMIENTO PREVENTIVO Y SERVICIO GENERAL",
-    content: `Se completó satisfactoriamente el servicio de mantenimiento programado del vehículo, habiendo ejecutado los siguientes puntos de control:
-
-1. Cambio de aceite de motor y filtros (aceite, aire y cabina).
-2. Revisión de niveles de fluidos (frenos, dirección, refrigerante).
-3. Calibración de bujías y revisión del sistema de encendido.
-4. Ajuste de frenos y engrase de crucetas/tren motriz.
-
-El vehículo se encuentra en óptimas condiciones de funcionamiento.`,
-    cost: "950",
-  },
-];
-
 export function ReportCRUD() {
   const { token, isReadOnly, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<TechnicalReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Tipo de documento: informe técnico (INF) o carta formal (CAR)
+  const [docType, setDocType] = useState<"informe" | "carta">("informe");
+
+  // Plantillas dinámicas cargadas desde la BD
+  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   // Editor mode (true when creating or editing)
   const [isEditorMode, setIsEditorMode] = useState(false);
@@ -155,6 +112,20 @@ export function ReportCRUD() {
     }
   };
 
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(`${API_URL}/templates`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTemplates(data);
+      }
+    } catch (e) {
+      console.error("Error fetching templates:", e);
+    }
+  };
+
   const fetchClients = async () => {
     try {
       const res = await fetch(`${API_URL}/clients`, {
@@ -171,6 +142,7 @@ export function ReportCRUD() {
 
   useEffect(() => {
     fetchReports();
+    fetchTemplates();
   }, [search, token]);
 
   useEffect(() => {
@@ -220,7 +192,8 @@ export function ReportCRUD() {
     }
   };
 
-  const handleOpenCreate = async () => {
+  const handleOpenCreate = async (type: "informe" | "carta" = "informe") => {
+    setDocType(type);
     setEditingReport(null);
     setSelectedClientId("");
     setSelectedVehicleId("");
@@ -229,28 +202,34 @@ export function ReportCRUD() {
     setVehiculoDescripcion("");
     setPlaca("");
     setKilometraje("");
-    setReferencia("");
+    setReferencia(type === "carta" ? "SOLICITUD / COMUNICACION DE TALLER" : "");
     setContenido("");
     setCostoEstimado("");
-    setConclusion("Es todo lo que puedo informar para los fines correspondientes.");
+    setConclusion(
+      type === "carta"
+        ? "Sin otro particular, me despido con las consideraciones más distinguidas."
+        : "Es todo lo que puedo informar para los fines correspondientes."
+    );
     setFirmanteNombre("IMAV MOTORS S.R.L.");
     setFirmanteCargo("Servicio Integral Automotriz");
     setFecha(new Date().toISOString().slice(0, 10));
     setCiudad("Santa Cruz");
 
-    // Fetch next sequential number
+    // Fetch next sequential number according to document type (INF or CAR)
+    const currentYear = new Date().getFullYear();
+    const fallback = type === "carta" ? `CAR-${currentYear}-001` : `INF-${currentYear}-001`;
     try {
-      const res = await fetch(`${API_URL}/reports/next-number`, {
+      const res = await fetch(`${API_URL}/reports/next-number?type=${type}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const { nextNumber } = await res.json();
         setNumeroInforme(nextNumber);
       } else {
-        setNumeroInforme(`INF-${new Date().getFullYear()}-001`);
+        setNumeroInforme(fallback);
       }
     } catch {
-      setNumeroInforme(`INF-${new Date().getFullYear()}-001`);
+      setNumeroInforme(fallback);
     }
 
     setIsEditorMode(true);
@@ -258,6 +237,8 @@ export function ReportCRUD() {
   };
 
   const handleOpenEdit = (rep: TechnicalReport) => {
+    const isLetter = rep.numero_informe?.toUpperCase().startsWith("CAR");
+    setDocType(isLetter ? "carta" : "informe");
     setEditingReport(rep);
     setSelectedClientId(rep.id_cliente ? rep.id_cliente.toString() : "");
     setSelectedVehicleId(rep.id_vehiculo ? rep.id_vehiculo.toString() : "");
@@ -272,18 +253,25 @@ export function ReportCRUD() {
     setReferencia(rep.referencia);
     setContenido(rep.contenido);
     setCostoEstimado(rep.costo_estimado ? rep.costo_estimado.toString() : "");
-    setConclusion(rep.conclusion || "Es todo lo que puedo informar para los fines correspondientes.");
+    setConclusion(
+      rep.conclusion ||
+        (isLetter
+          ? "Sin otro particular, me despido con las consideraciones más distinguidas."
+          : "Es todo lo que puedo informar para los fines correspondientes.")
+    );
     setFirmanteNombre(rep.firmante_nombre || "IMAV MOTORS S.R.L.");
     setFirmanteCargo(rep.firmante_cargo || "Servicio Integral Automotriz");
     setIsEditorMode(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleApplyTemplate = (tmpl: typeof TEMPLATES[0]) => {
-    setReferencia(tmpl.ref);
-    setContenido(tmpl.content);
-    if (tmpl.cost) setCostoEstimado(tmpl.cost);
-    toast.success(`Plantilla aplicada: ${tmpl.title}`);
+  const handleApplyTemplate = (tmpl: DocumentTemplate) => {
+    setReferencia(tmpl.referencia);
+    setContenido(tmpl.contenido);
+    if (tmpl.costo_estimado && docType !== "carta") {
+      setCostoEstimado(tmpl.costo_estimado.toString());
+    }
+    toast.success(`Plantilla aplicada: ${tmpl.titulo}`);
   };
 
   const handleSave = async (andPrint = false) => {
@@ -296,11 +284,11 @@ export function ReportCRUD() {
       return;
     }
     if (!referencia.trim()) {
-      toast.error("Ingrese la referencia del informe (REF)");
+      toast.error(`Ingrese la referencia del ${docType === "carta" ? "documento" : "informe"} (REF)`);
       return;
     }
     if (!contenido.trim()) {
-      toast.error("Ingrese el contenido o cuerpo del informe");
+      toast.error(`Ingrese el contenido o cuerpo de la ${docType === "carta" ? "carta" : "informe"}`);
       return;
     }
 
@@ -319,7 +307,7 @@ export function ReportCRUD() {
         referencia,
         contenido,
         conclusion: conclusion || null,
-        costo_estimado: costoEstimado ? parseFloat(costoEstimado) : null,
+        costo_estimado: docType === "carta" ? null : (costoEstimado ? parseFloat(costoEstimado) : null),
         firmante_nombre: firmanteNombre,
         firmante_cargo: firmanteCargo,
         estado: "EMITIDO",
@@ -341,11 +329,15 @@ export function ReportCRUD() {
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.message || "Error al guardar el informe técnico");
+        toast.error(data.message || `Error al guardar ${docType === "carta" ? "la carta" : "el informe técnico"}`);
         return;
       }
 
-      toast.success(editingReport ? "Informe técnico actualizado" : "Informe técnico creado exitosamente");
+      toast.success(
+        editingReport
+          ? `${docType === "carta" ? "Carta" : "Informe técnico"} actualizado`
+          : `${docType === "carta" ? "Carta" : "Informe técnico"} creado exitosamente`
+      );
       setIsEditorMode(false);
       fetchReports();
 
@@ -420,11 +412,13 @@ export function ReportCRUD() {
                 <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
                   <FileText className="size-5 text-primary" />
                   {editingReport
-                    ? `Editar Informe: ${editingReport.numero_informe}`
-                    : "Emisión de Nuevo Informe Técnico"}
+                    ? `Editar ${docType === "carta" ? "Carta" : "Informe"}: ${editingReport.numero_informe}`
+                    : `Emisión de ${docType === "carta" ? "Nueva Carta Formal" : "Nuevo Informe Técnico"}`}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Complete los datos a la izquierda y observe el documento en tamaño Carta a la derecha.
+                  {docType === "carta"
+                    ? "Redacte la carta formal a la izquierda y observe el documento membretado en tiempo real."
+                    : "Complete los datos a la izquierda y observe el documento en tamaño Carta a la derecha."}
                 </p>
               </div>
             </div>
@@ -441,13 +435,13 @@ export function ReportCRUD() {
                 onClick={() => handleSave(false)}
                 className="gap-2"
               >
-                <Save className="size-4" /> Guardar Informe
+                <Save className="size-4" /> {docType === "carta" ? "Guardar Carta" : "Guardar Informe"}
               </Button>
               <Button
                 onClick={() => handleSave(true)}
                 className="gap-2 shadow-sm"
               >
-                <Printer className="size-4" /> Guardar e Imprimir
+                <Printer className="size-4" /> {docType === "carta" ? "Guardar e Imprimir Carta" : "Guardar e Imprimir"}
               </Button>
             </div>
           </div>
@@ -456,35 +450,67 @@ export function ReportCRUD() {
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
             {/* Formulario */}
             <section className="panel p-6 lg:p-7 space-y-5 bg-card border rounded-2xl shadow-sm">
-              {/* Plantillas Rápidas */}
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-2">
-                  <Sparkles className="size-3.5" /> Plantillas de Redacción Rápida (1 Clic):
+              {/* Plantillas Rápidas con Botón de Gestión */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <Sparkles className="size-3.5" /> Plantillas de Redacción ({docType === "carta" ? "Cartas Formulares" : "Informes Técnicos"}):
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsTemplateModalOpen(true)}
+                    className="h-6 px-2 text-[11px] gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    <Settings className="size-3" /> Gestionar Plantillas
+                  </Button>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
-                  {TEMPLATES.map((tmpl, idx) => (
-                    <Button
-                      key={idx}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 bg-background hover:bg-primary/10"
-                      onClick={() => handleApplyTemplate(tmpl)}
-                    >
-                      {tmpl.title}
-                    </Button>
-                  ))}
+                  {templates.filter((t) => (docType === "carta" ? t.tipo === "CARTA" : t.tipo === "INFORME")).length === 0 ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground italic py-1">
+                      <span>No hay plantillas registradas para {docType === "carta" ? "cartas" : "informes"}.</span>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        onClick={() => setIsTemplateModalOpen(true)}
+                        className="h-auto p-0 text-xs font-semibold text-primary underline"
+                      >
+                        Crear una plantilla
+                      </Button>
+                    </div>
+                  ) : (
+                    templates
+                      .filter((t) => (docType === "carta" ? t.tipo === "CARTA" : t.tipo === "INFORME"))
+                      .map((tmpl) => (
+                        <Button
+                          key={tmpl.id_plantilla}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-7 bg-background hover:bg-primary/10 shadow-xs"
+                          onClick={() => handleApplyTemplate(tmpl)}
+                          title={`REF: ${tmpl.referencia}`}
+                        >
+                          {tmpl.titulo}
+                        </Button>
+                      ))
+                  )}
                 </div>
               </div>
 
               {/* Fila 1: Correlativo, Fecha y Ciudad */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Número de Informe</Label>
+                  <Label className="text-xs">
+                    {docType === "carta" ? "Código / N° de Carta" : "Número de Informe"}
+                  </Label>
                   <Input
                     value={numeroInforme}
                     onChange={(e) => setNumeroInforme(e.target.value)}
-                    placeholder="INF-2026-001"
+                    placeholder={docType === "carta" ? "CAR-2026-001" : "INF-2026-001"}
                     className="font-mono font-bold"
                     required
                   />
@@ -628,11 +654,17 @@ export function ReportCRUD() {
 
               {/* Referencia (REF) */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Referencia del Informe (REF:)</Label>
+                <Label className="text-xs font-bold">
+                  {docType === "carta" ? "Referencia de la Carta (REF:)" : "Referencia del Informe (REF:)"}
+                </Label>
                 <Input
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
-                  placeholder="INFORME PROBLEMA CAJA DE DIRECCION HIDRAULICA"
+                  placeholder={
+                    docType === "carta"
+                      ? "SOLICITUD DE APROBACION DE TRABAJOS MECANICOS"
+                      : "INFORME PROBLEMA CAJA DE DIRECCION HIDRAULICA"
+                  }
                   className="font-semibold uppercase tracking-wide"
                   required
                 />
@@ -640,12 +672,18 @@ export function ReportCRUD() {
 
               {/* Contenido / Cuerpo */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Contenido del Informe Técnico</Label>
+                <Label className="text-xs font-bold">
+                  {docType === "carta" ? "Contenido / Cuerpo de la Carta" : "Contenido del Informe Técnico"}
+                </Label>
                 <Textarea
                   rows={8}
                   value={contenido}
                   onChange={(e) => setContenido(e.target.value)}
-                  placeholder="Describa detalladamente el diagnóstico, anomalías encontradas, procedimientos efectuados y conclusiones..."
+                  placeholder={
+                    docType === "carta"
+                      ? "Por medio de la presente, nos dirigimos a ustedes con el propósito de..."
+                      : "Describa detalladamente el diagnóstico, anomalías encontradas, procedimientos efectuados y conclusiones..."
+                  }
                   className="leading-relaxed font-sans"
                   required
                 />
@@ -653,22 +691,35 @@ export function ReportCRUD() {
 
               {/* Costo estimado y Cierre */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Costo Estimado / Cotizado Bs. (Opcional)</Label>
-                  <Input
-                    value={costoEstimado}
-                    onChange={(e) => setCostoEstimado(e.target.value)}
-                    placeholder="7900"
-                    inputMode="decimal"
-                  />
-                </div>
+                {docType !== "carta" ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Costo Estimado / Cotizado Bs. (Opcional)</Label>
+                    <Input
+                      value={costoEstimado}
+                      onChange={(e) => setCostoEstimado(e.target.value)}
+                      placeholder="7900"
+                      inputMode="decimal"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-medium">Costo Estimado</Label>
+                    <div className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-dashed flex items-center h-10">
+                      En formato Carta no se incluye recuadro de costo ni cotización.
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Texto de Cierre</Label>
                   <Input
                     value={conclusion}
                     onChange={(e) => setConclusion(e.target.value)}
-                    placeholder="Es todo lo que puedo informar para los fines correspondientes."
+                    placeholder={
+                      docType === "carta"
+                        ? "Sin otro particular, me despido atentamente."
+                        : "Es todo lo que puedo informar para los fines correspondientes."
+                    }
                   />
                 </div>
               </div>
@@ -689,14 +740,14 @@ export function ReportCRUD() {
                     onClick={() => handleSave(false)}
                     className="flex-1 sm:flex-none gap-2"
                   >
-                    <Save className="size-4" /> Guardar Informe
+                    <Save className="size-4" /> {docType === "carta" ? "Guardar Carta" : "Guardar Informe"}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => handleSave(true)}
                     className="flex-1 sm:flex-none gap-2 shadow-sm"
                   >
-                    <Printer className="size-4" /> Guardar e Imprimir
+                    <Printer className="size-4" /> {docType === "carta" ? "Guardar e Imprimir Carta" : "Guardar e Imprimir"}
                   </Button>
                 </div>
               </div>
@@ -732,17 +783,34 @@ export function ReportCRUD() {
                 className="pl-9"
               />
             </div>
-            <Button onClick={handleOpenCreate} disabled={isReadOnly}>
-              <Plus className="size-4 mr-2" /> Nuevo Informe Técnico
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => setIsTemplateModalOpen(true)}
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/5 font-medium"
+              >
+                <Sparkles className="size-4 text-primary" /> Plantillas
+              </Button>
+              <Button onClick={() => handleOpenCreate("informe")} disabled={isReadOnly}>
+                <Plus className="size-4 mr-1.5" /> Nuevo Informe Técnico
+              </Button>
+              <Button
+                onClick={() => handleOpenCreate("carta")}
+                disabled={isReadOnly}
+                variant="outline"
+                className="border-primary/40 hover:bg-primary/5 text-primary font-semibold"
+              >
+                <Plus className="size-4 mr-1.5" /> Nueva Carta
+              </Button>
+            </div>
           </div>
 
-          {/* Tabla de Informes */}
+          {/* Tabla de Informes y Cartas */}
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>N° Informe</TableHead>
+                  <TableHead>N° Documento</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Destinatario (Cliente)</TableHead>
                   <TableHead>Vehículo / Placa</TableHead>
@@ -754,21 +822,32 @@ export function ReportCRUD() {
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Cargando informes técnicos...
+                      Cargando documentos...
                     </TableCell>
                   </TableRow>
                 ) : reports.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                       <FileText className="size-8 mx-auto mb-2 opacity-30" />
-                      No se encontraron informes técnicos registrados.
+                      No se encontraron informes técnicos ni cartas registradas.
                     </TableCell>
                   </TableRow>
                 ) : (
                   reports.map((rep) => (
                     <TableRow key={rep.id_informe}>
-                      <TableCell className="font-mono font-bold text-xs text-primary">
-                        {rep.numero_informe}
+                      <TableCell className="whitespace-nowrap">
+                        <span className="font-mono font-bold text-xs text-primary block">
+                          {rep.numero_informe}
+                        </span>
+                        {rep.numero_informe?.toUpperCase().startsWith("CAR") ? (
+                          <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25 mt-0.5">
+                            Carta
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-primary/10 text-primary border border-primary/20 mt-0.5">
+                            Informe
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {rep.fecha ? new Date(rep.fecha).toLocaleDateString("es-BO") : "—"}
@@ -826,6 +905,15 @@ export function ReportCRUD() {
           </div>
         </div>
       )}
+
+      {/* Modal para Administrar Plantillas de Informes y Cartas */}
+      <TemplateManagerModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        templates={templates}
+        onTemplatesChanged={fetchTemplates}
+        initialType={docType === "carta" ? "CARTA" : "INFORME"}
+      />
     </div>
   );
 }

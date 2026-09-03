@@ -46,7 +46,8 @@ function ReportView() {
 
   useEffect(() => {
     if (report) {
-      document.title = `${report.numero_informe} - IMAV Motors`;
+      const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
+      document.title = `${isLetter ? "Carta" : "Informe"} ${report.numero_informe} - IMAV Motors`;
     }
     return () => {
       document.title = "IMAV Motors S.R.L.";
@@ -62,7 +63,7 @@ function ReportView() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="mt-4 text-sm text-muted-foreground">Cargando informe...</p>
+          <p className="mt-4 text-sm text-muted-foreground">Cargando documento...</p>
         </div>
       </div>
     );
@@ -73,9 +74,9 @@ function ReportView() {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
           <AlertTriangle className="mx-auto size-12 text-destructive" />
-          <h1 className="mt-4 text-xl font-semibold">Informe no encontrado</h1>
+          <h1 className="mt-4 text-xl font-semibold">Documento no encontrado</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            No se pudo encontrar el informe técnico solicitado en el sistema.
+            No se pudo encontrar el documento solicitado en el sistema.
           </p>
           <Button onClick={() => navigate({ to: "/" })} className="mt-6">
             Volver al inicio
@@ -84,6 +85,8 @@ function ReportView() {
       </div>
     );
   }
+
+  const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,14 +108,14 @@ function ReportView() {
             <div className="flex items-center gap-2">
               <img src={logo} alt="IMAV" className="size-6 object-contain" />
               <span className="font-semibold text-sm">
-                {report.numero_informe}
+                {isLetter ? "Carta" : "Informe"}: {report.numero_informe}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Button onClick={handlePrint} className="gap-2 shadow-sm">
-              <Printer className="size-4" /> Imprimir Informe
+              <Printer className="size-4" /> {isLetter ? "Imprimir Carta" : "Imprimir Informe"}
             </Button>
           </div>
         </div>

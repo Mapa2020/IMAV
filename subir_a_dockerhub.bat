@@ -6,8 +6,8 @@ echo =======================================================
 echo          PUBLICACIÓN EN DOCKER HUB - IMAV MOTORS
 echo =======================================================
 echo.
-set /p DOCKER_USER="Introduce tu usuario de Docker Hub (o presiona Enter para usar mapa2020): "
-if "%DOCKER_USER%"=="" set "DOCKER_USER=mapa2020"
+set /p DOCKER_USER="Introduce tu usuario de Docker Hub (o presiona Enter para usar mapadoc2025): "
+if "%DOCKER_USER%"=="" set "DOCKER_USER=mapadoc2025"
 
 echo.
 echo Usando usuario: %DOCKER_USER%
@@ -34,10 +34,12 @@ if %errorlevel% neq 0 (
 
 :: 3. Etiquetar imágenes con el nombre de usuario
 echo.
-echo [3/4] Etiquetando imágenes para Docker Hub...
-docker tag imav-backend:latest %DOCKER_USER%/imav-backend:latest
-docker tag imav-frontend:latest %DOCKER_USER%/imav-frontend:latest
-echo [OK] Etiquetas creadas:
+echo [3/4] Preparando etiquetas para Docker Hub...
+docker tag mapadoc2025/imav-backend:latest %DOCKER_USER%/imav-backend:latest >nul 2>&1
+docker tag imav-backend:latest %DOCKER_USER%/imav-backend:latest >nul 2>&1
+docker tag mapadoc2025/imav-frontend:latest %DOCKER_USER%/imav-frontend:latest >nul 2>&1
+docker tag imav-frontend:latest %DOCKER_USER%/imav-frontend:latest >nul 2>&1
+echo [OK] Imágenes listas:
 echo   - %DOCKER_USER%/imav-backend:latest
 echo   - %DOCKER_USER%/imav-frontend:latest
 

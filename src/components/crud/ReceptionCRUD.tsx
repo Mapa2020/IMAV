@@ -270,9 +270,9 @@ export function ReceptionCRUD() {
                 return (
                   <TableRow key={r.id_ingreso}>
                     <TableCell>{date}</TableCell>
-                    <TableCell className="font-mono text-xs font-semibold">{r.placa}</TableCell>
-                    <TableCell className="text-xs">{r.marca} {r.modelo}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{r.nombre_cliente}</TableCell>
+                    <TableCell className="font-mono text-sm font-bold text-foreground">{r.placa}</TableCell>
+                    <TableCell className="text-sm font-medium text-foreground whitespace-normal">{r.marca} {r.modelo}</TableCell>
+                    <TableCell className="text-sm sm:text-base font-semibold text-foreground max-w-[240px] whitespace-normal">{r.nombre_cliente}</TableCell>
                     <TableCell className="text-xs leading-normal">
                       <p>Rec: {r.nombre_receptor} {r.paterno_receptor}</p>
                       <p className="text-muted-foreground">Mec: {r.nombre_mecanico} {r.paterno_mecanico}</p>

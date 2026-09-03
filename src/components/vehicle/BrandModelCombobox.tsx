@@ -153,10 +153,10 @@ export function BrandModelCombobox({
     <div className={`grid gap-4 sm:grid-cols-2 ${className}`}>
       {/* --- COMBOBOX MARCA --- */}
       <div ref={brandContainerRef} className="relative space-y-2">
-        <Label className="label-caps flex items-center justify-between">
+        <Label className="label-caps flex items-center justify-between text-xs font-bold">
           <span>Marca</span>
           {brands.length > 0 && (
-            <span className="text-[10px] text-muted-foreground font-normal">
+            <span className="text-[11px] text-muted-foreground font-normal">
               {brands.length} marcas disponibles
             </span>
           )}
@@ -179,7 +179,7 @@ export function BrandModelCombobox({
               }
             }}
             placeholder="Seleccione o escriba Marca (ej. Toyota)"
-            className="pr-8 mt-1"
+            className="pr-8 mt-1 h-10 text-sm sm:text-base font-medium"
           />
           <button
             type="button"
@@ -234,23 +234,23 @@ export function BrandModelCombobox({
                       key={b.id_marca}
                       type="button"
                       onClick={() => handleSelectBrand(b.nombre)}
-                      className={`flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground ${
+                      className={`flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
                         isSelected
                           ? "bg-primary/10 font-semibold text-primary"
                           : ""
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Car className="size-3.5 text-muted-foreground" />
-                        <span>{b.nombre}</span>
+                        <Car className="size-4 text-muted-foreground" />
+                        <span className="font-medium">{b.nombre}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         {b.total_modelos !== undefined && b.total_modelos > 0 && (
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {b.total_modelos} mod.
                           </span>
                         )}
-                        {isSelected && <Check className="size-3.5 text-primary" />}
+                        {isSelected && <Check className="size-4 text-primary" />}
                       </div>
                     </button>
                   );
@@ -263,10 +263,10 @@ export function BrandModelCombobox({
 
       {/* --- COMBOBOX MODELO --- */}
       <div ref={modelContainerRef} className="relative space-y-2">
-        <Label className="label-caps flex items-center justify-between">
+        <Label className="label-caps flex items-center justify-between text-xs font-bold">
           <span>Modelo</span>
           {models.length > 0 && (
-            <span className="text-[10px] text-muted-foreground font-normal">
+            <span className="text-[11px] text-muted-foreground font-normal">
               {models.length} modelos de {brand}
             </span>
           )}
@@ -293,7 +293,7 @@ export function BrandModelCombobox({
                 ? `Modelo de ${brand} (ej. Hilux)`
                 : "Seleccione una marca primero..."
             }
-            className="pr-8 mt-1"
+            className="pr-8 mt-1 h-10 text-sm sm:text-base font-medium"
           />
           <button
             type="button"
@@ -360,17 +360,17 @@ export function BrandModelCombobox({
                       key={m.id_modelo}
                       type="button"
                       onClick={() => handleSelectModel(m.nombre)}
-                      className={`flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-xs transition-colors hover:bg-accent hover:text-accent-foreground ${
+                      className={`flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
                         isSelected
                           ? "bg-primary/10 font-semibold text-primary"
                           : ""
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Layers className="size-3.5 text-muted-foreground" />
-                        <span>{m.nombre}</span>
+                        <Layers className="size-4 text-muted-foreground" />
+                        <span className="font-medium">{m.nombre}</span>
                       </div>
-                      {isSelected && <Check className="size-3.5 text-primary" />}
+                      {isSelected && <Check className="size-4 text-primary" />}
                     </button>
                   );
                 })

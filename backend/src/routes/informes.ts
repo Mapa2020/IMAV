@@ -7,10 +7,12 @@ const router = Router();
 // @desc    Get next sequential report number (e.g., INF-2026-001)
 // @route   GET /api/reports/next-number
 // @access  Private
-router.get("/next-number", protect, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get("/next-number", protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const currentYear = new Date().getFullYear();
-    const prefix = `INF-${currentYear}-`;
+    const type = ((req.query.type as string) || "informe").toLowerCase();
+    const docPrefix = type === "carta" ? "CAR" : "INF";
+    const prefix = `${docPrefix}-${currentYear}-`;
 
     const [rows] = await pool.query(
       "SELECT numero_informe FROM informes_tecnicos WHERE numero_informe LIKE ? ORDER BY id_informe DESC LIMIT 1",
@@ -32,7 +34,7 @@ router.get("/next-number", protect, async (_req: AuthenticatedRequest, res: Resp
     const nextNumber = `${prefix}${String(nextCorrelative).padStart(3, "0")}`;
     res.json({ nextNumber });
   } catch (error: any) {
-    res.status(500).json({ message: "Error al generar número de informe", error: error.message });
+    res.status(500).json({ message: "Error al generar correlativo de informe o carta", error: error.message });
   }
 });
 

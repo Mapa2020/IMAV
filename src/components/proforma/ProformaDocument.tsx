@@ -255,32 +255,32 @@ export function ProformaDocument({
               <tr className="proforma-tr">
                 <td className="proforma-td p-0 border-none">
                   {/* Fila 1: Cliente, Teléfono y CI/NIT */}
-                  <div className="border-b border-slate-300 px-8 pt-2.5 pb-1.5 print:pt-2 print:pb-1 avoid-break flex justify-between items-end">
+                  <div className="border-b border-slate-300 px-8 pt-2.5 pb-1.5 print:pt-2 print:pb-1 avoid-break flex justify-between items-end gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                         Cliente
                       </p>
-                      <p className="text-sm font-semibold text-paper-foreground">
-                        {data.clientName}
+                      <p className="text-base sm:text-lg font-bold text-paper-foreground leading-snug">
+                        {data.clientName || "—"}
                       </p>
                     </div>
                     <div className="flex gap-8">
                       {data.clientPhone && (
                         <div className="text-right sm:text-left">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                             Teléfono
                           </p>
-                          <p className="text-sm font-mono font-medium text-paper-foreground">
+                          <p className="text-sm sm:text-base font-mono font-semibold text-paper-foreground">
                             {data.clientPhone}
                           </p>
                         </div>
                       )}
                       {data.clientDoc && (
                         <div className="text-right">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                             CI / NIT
                           </p>
-                          <p className="text-sm font-mono font-medium text-paper-foreground">
+                          <p className="text-sm sm:text-base font-mono font-semibold text-paper-foreground">
                             {data.clientDoc}
                           </p>
                         </div>
@@ -289,29 +289,29 @@ export function ProformaDocument({
                   </div>
 
                   {/* Fila 2: Datos del Vehículo */}
-                  <div className="grid gap-4 sm:gap-6 px-8 pt-1.5 pb-2.5 print:pt-1 print:pb-2 sm:grid-cols-3 border-b border-slate-300/80 avoid-break">
+                  <div className="grid gap-4 sm:gap-6 px-8 pt-2 pb-2.5 print:pt-1.5 print:pb-2 sm:grid-cols-3 border-b border-slate-300/80 avoid-break">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                         Placa
                       </p>
-                      <p className="text-sm font-mono font-bold text-paper-foreground">
-                        {data.plate.toUpperCase()}
+                      <p className="text-base sm:text-lg font-mono font-bold text-paper-foreground">
+                        {data.plate.toUpperCase() || "—"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                         Marca / Modelo
                       </p>
-                      <p className="text-sm font-semibold text-paper-foreground">
-                        {[data.brand, data.model].filter(Boolean).join(" ")}
+                      <p className="text-base sm:text-lg font-bold text-paper-foreground leading-snug">
+                        {[data.brand, data.model].filter(Boolean).join(" ") || "—"}
                       </p>
                     </div>
                     {data.vin && (
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                           VIN / Chasis
                         </p>
-                        <p className="text-sm font-mono text-paper-foreground">
+                        <p className="text-sm sm:text-base font-mono font-medium text-paper-foreground">
                           {data.vin}
                         </p>
                       </div>
