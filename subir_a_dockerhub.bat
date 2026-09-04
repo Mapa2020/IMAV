@@ -24,8 +24,8 @@ if %errorlevel% neq 0 (
 
 :: 2. Construir imágenes locales
 echo.
-echo [2/4] Construyendo imágenes locales con docker compose build...
-docker compose build
+echo [2/4] Construyendo imágenes locales desde cero (sin caché)...
+docker compose build --no-cache
 if %errorlevel% neq 0 (
     echo [ERROR] Falló la construcción de imágenes.
     pause
