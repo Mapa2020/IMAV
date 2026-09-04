@@ -154,8 +154,16 @@ interface Employee {
 }
 
 function Index() {
-  const { user, token, logout, isReadOnly } = useAuth();
+  const { user, token, logout, isReadOnly, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Si no está autenticado, redirigir a /login
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [isLoading, user, navigate]);
+
   const [activeTab, setActiveTab] = useState("proforma-flow");
 
   // Form states
@@ -518,6 +526,21 @@ function Index() {
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Iniciando sistema...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">

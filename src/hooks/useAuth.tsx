@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 export interface User {
   id_usuario: number;
@@ -28,6 +29,7 @@ export const API_URL =
     : "http://localhost:5000/api");
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (savedToken && savedUser) {
       try {
+        // Verificar si el token JWT expiró
+        const parts = savedToken.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.exp && payload.exp * 1000 < Date.now()) {
+            localStorage.removeItem("imav_token");
+            localStorage.removeItem("imav_user");
+            setToken(null);
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
+        }
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
       } catch (e) {
@@ -86,6 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("imav_token");
     localStorage.removeItem("imav_user");
     toast.info("Sesión cerrada");
+    try {
+      navigate({ to: "/login" });
+    } catch {
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
   };
 
   const isAdmin = user?.rol === "ADMINISTRADOR";

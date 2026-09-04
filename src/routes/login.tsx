@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../hooks/useAuth";
 import { KeyRound, User, Car, ArrowRight } from "lucide-react";
@@ -13,11 +13,18 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const { login, logout } = useAuth();
+  const { login, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Si ya está autenticado, redirigir al panel principal
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate({ to: "/" });
+    }
+  }, [isLoading, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,12 +40,6 @@ function Login() {
     if (success) {
       navigate({ to: "/" });
     }
-  };
-
-  const handleGuest = () => {
-    logout(); // Limpiar sesión anterior
-    toast.info("Ingresando en modo Solo Lectura");
-    navigate({ to: "/" });
   };
 
   return (
@@ -108,25 +109,8 @@ function Login() {
             </Button>
           </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">O continuar</span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={handleGuest}
-            className="w-full"
-          >
-            Modo Solo Lectura (Invitado)
-          </Button>
-
           <div className="mt-6 rounded-lg bg-surface-2/40 p-3 text-xs text-muted-foreground">
-            <p className="font-semibold text-foreground mb-1">Cuentas de prueba:</p>
+            <p className="font-semibold text-foreground mb-1">Cuentas de acceso:</p>
             <ul className="list-disc list-inside space-y-0.5">
               <li>Administrador: <code className="bg-muted px-1 rounded">admin</code> / <code className="bg-muted px-1 rounded">admin123</code></li>
               <li>Usuario Editor: <code className="bg-muted px-1 rounded">editor</code> / <code className="bg-muted px-1 rounded">editor123</code></li>

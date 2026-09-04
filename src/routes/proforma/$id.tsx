@@ -15,10 +15,16 @@ export const Route = createFileRoute("/proforma/$id")({
 
 function ProformaView() {
   const { id } = Route.useParams();
-  const { isReadOnly, isEditor, token } = useAuth();
+  const { isReadOnly, isEditor, token, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [proforma, setProforma] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [isLoading, user, navigate]);
 
   const fetchProforma = async () => {
     try {

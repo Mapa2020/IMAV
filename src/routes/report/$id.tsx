@@ -14,10 +14,16 @@ export const Route = createFileRoute("/report/$id")({
 
 function ReportView() {
   const { id } = Route.useParams();
-  const { token } = useAuth();
+  const { token, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [report, setReport] = useState<TechnicalReport | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [isLoading, user, navigate]);
 
   const fetchReport = async () => {
     try {
