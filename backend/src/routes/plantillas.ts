@@ -136,7 +136,7 @@ router.put("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
 // @route   DELETE /api/templates/:id
 // @access  Private
 router.delete("/:id", protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
+  const { id } = req.params as { id: string };
 
   try {
     const [existing] = await pool.query("SELECT id_plantilla FROM plantillas_documentos WHERE id_plantilla = ?", [id]);
