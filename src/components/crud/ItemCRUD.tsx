@@ -49,7 +49,6 @@ export function ItemCRUD() {
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState<"REPUESTO" | "SERVICIO">("SERVICIO");
   const [precio, setPrecio] = useState("");
-  const [stock, setStock] = useState("");
   const [detalle, setDetalle] = useState("");
 
   const fetchItems = async () => {
@@ -89,7 +88,6 @@ export function ItemCRUD() {
     setDescripcion("");
     setTipo("SERVICIO");
     setPrecio("");
-    setStock("0");
     setDetalle("");
     setIsOpen(true);
   };
@@ -104,7 +102,6 @@ export function ItemCRUD() {
     setDescripcion(item.descripcion);
     setTipo(item.tipo_item);
     setPrecio(item.precio.toString());
-    setStock(item.stock_actual?.toString() || "0");
     setDetalle(item.detalle || "");
     setIsOpen(true);
   };
@@ -124,17 +121,13 @@ export function ItemCRUD() {
       toast.error("El precio debe ser un número válido mayor o igual a cero");
       return;
     }
-    if (tipo === "REPUESTO" && (stock === "" || isNaN(Number(stock)) || Number(stock) < 0)) {
-      toast.error("El stock debe ser un número válido mayor o igual a cero");
-      return;
-    }
 
     const bodyData = {
       codigo: codigo.trim().toUpperCase(),
       descripcion: descripcion.trim(),
       tipo_item: tipo,
       precio: Number(precio),
-      stock_actual: tipo === "REPUESTO" ? Number(stock) : null,
+      stock_actual: editingItem ? (editingItem.stock_actual ?? 0) : 0,
       detalle: detalle.trim() || null,
     };
 
@@ -239,20 +232,19 @@ export function ItemCRUD() {
               <TableHead>Descripción</TableHead>
               <TableHead className="w-[120px]">Tipo</TableHead>
               <TableHead className="w-[120px] text-right">Precio</TableHead>
-              <TableHead className="w-[120px] text-right">Stock</TableHead>
               {isEditor && <TableHead className="w-[100px] text-center">Acciones</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Cargando items...
                 </TableCell>
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No se encontraron items registrados.
                 </TableCell>
               </TableRow>
@@ -264,7 +256,7 @@ export function ItemCRUD() {
                     <div>{item.descripcion}</div>
                     {item.detalle && (
                       <div className="text-[11px] text-foreground/80 italic mt-0.5">
-                        ↳ {item.detalle}
+                        {item.detalle.replace(/^[↳↵\r\n\s]+/, "")}
                       </div>
                     )}
                   </TableCell>
@@ -279,15 +271,6 @@ export function ItemCRUD() {
                   </TableCell>
                   <TableCell className="text-right font-mono font-semibold">
                     {currency(item.precio)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {item.tipo_item === "REPUESTO" ? (
-                      <span className={item.stock_actual && item.stock_actual > 0 ? "text-foreground" : "text-destructive font-bold"}>
-                        {item.stock_actual ?? 0} u.
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs font-sans italic">no aplica</span>
-                    )}
                   </TableCell>
                   {isEditor && (
                     <TableCell>
@@ -386,33 +369,18 @@ export function ItemCRUD() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="precio">
-                  {tipo === "REPUESTO" ? "Precio Venta (Bs.)*" : "Precio Base / Costo (Bs.)*"}
-                </Label>
-                <Input
-                  id="precio"
-                  type="number"
-                  step="0.01"
-                  placeholder="Ej. 150.00"
-                  value={precio}
-                  onChange={(e) => setPrecio(e.target.value)}
-                />
-              </div>
-
-              {tipo === "REPUESTO" && (
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Inicial (unidades)*</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    placeholder="Ej. 10"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                  />
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="precio">
+                {tipo === "REPUESTO" ? "Precio Venta (Bs.)*" : "Precio Base / Costo (Bs.)*"}
+              </Label>
+              <Input
+                id="precio"
+                type="number"
+                step="0.01"
+                placeholder="Ej. 150.00"
+                value={precio}
+                onChange={(e) => setPrecio(e.target.value)}
+              />
             </div>
 
             {editingItem && (

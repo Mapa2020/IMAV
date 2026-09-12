@@ -178,7 +178,7 @@ export function ItemAutocomplete({
                         </div>
                         {item.detalle && (
                           <p className="text-xs text-slate-600 line-clamp-3 italic mt-1">
-                            ↳ {item.detalle}
+                            {item.detalle.replace(/^[↳↵\r\n\s]+/, "")}
                           </p>
                         )}
                       </div>

@@ -1,5 +1,4 @@
-@import "tailwindcss" source(none);
-@source "../src";
+@import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -84,7 +83,7 @@
   --destructive-foreground: oklch(0.98 0.003 260);
   --success: oklch(0.72 0.15 155);
   --success-foreground: oklch(0.2 0.03 155);
-  --paper: oklch(0.985 0.004 90);
+  --paper: #ffffff;
   --paper-foreground: oklch(0.2 0.008 260);
   --paper-muted: oklch(0.53 0.01 260);
   --paper-border: oklch(0.9 0.005 260);
@@ -119,6 +118,18 @@
   h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+
+  /* Quitar pestañitas/flechas de incremento y decremento en inputs tipo number */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 }
 

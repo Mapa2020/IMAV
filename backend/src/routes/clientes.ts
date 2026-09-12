@@ -73,43 +73,38 @@ router.post(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { tipo_cliente, nombre, telefono, direccion, nit, ci, pasaporte, pais_origen } = req.body;
 
-    if (!tipo_cliente || !nombre) {
-      res.status(400).json({ message: "El tipo de cliente y nombre son obligatorios" });
+    if (!nombre || !String(nombre).trim()) {
+      res.status(400).json({ message: "El nombre del cliente es obligatorio" });
       return;
     }
 
-    // Validar check constraints de base de datos
-    if (tipo_cliente === "NIT" && !nit) {
-      res.status(400).json({ message: "El NIT es requerido para este tipo de cliente" });
-      return;
-    }
-    if (tipo_cliente === "CI" && !ci) {
-      res.status(400).json({ message: "El CI es requerido para este tipo de cliente" });
-      return;
-    }
-    if (tipo_cliente === "EXTRANJERO" && (!pasaporte || !pais_origen)) {
-      res.status(400).json({ message: "El pasaporte y país de origen son requeridos para clientes extranjeros" });
-      return;
-    }
+    const cleanTipoCliente = tipo_cliente || "CI";
+    const cleanNombre = String(nombre).trim();
+    const cleanTelefono = telefono && String(telefono).trim() && String(telefono).trim() !== "+591" ? String(telefono).trim() : null;
+    const cleanDireccion = direccion && String(direccion).trim() ? String(direccion).trim() : null;
+    const cleanNit = nit && String(nit).trim() ? String(nit).trim() : null;
+    const cleanCi = ci && String(ci).trim() ? String(ci).trim() : null;
+    const cleanPasaporte = pasaporte && String(pasaporte).trim() ? String(pasaporte).trim() : null;
+    const cleanPaisOrigen = pais_origen && String(pais_origen).trim() ? String(pais_origen).trim() : null;
 
     try {
-      // Verificar si ya existe CI / NIT / Pasaporte para evitar conflicto de Unique Key
-      if (ci) {
-        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE ci = ?", [ci]);
+      // Verificar si ya existe CI / NIT / Pasaporte (solo si se ingresó un documento no nulo)
+      if (cleanCi) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE ci = ?", [cleanCi]);
         if ((existing as any[]).length > 0) {
           res.status(400).json({ message: "Ya existe un cliente registrado con este CI" });
           return;
         }
       }
-      if (nit) {
-        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE nit = ?", [nit]);
+      if (cleanNit) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE nit = ?", [cleanNit]);
         if ((existing as any[]).length > 0) {
           res.status(400).json({ message: "Ya existe un cliente registrado con este NIT" });
           return;
         }
       }
-      if (pasaporte) {
-        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE pasaporte = ?", [pasaporte]);
+      if (cleanPasaporte) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE pasaporte = ?", [cleanPasaporte]);
         if ((existing as any[]).length > 0) {
           res.status(400).json({ message: "Ya existe un cliente registrado con este Pasaporte" });
           return;
@@ -119,14 +114,14 @@ router.post(
       const [result] = await pool.query(
         "INSERT INTO clientes (tipo_cliente, nombre, telefono, direccion, nit, ci, pasaporte, pais_origen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
-          tipo_cliente,
-          nombre,
-          telefono || null,
-          direccion || null,
-          nit || null,
-          ci || null,
-          pasaporte || null,
-          pais_origen || null,
+          cleanTipoCliente,
+          cleanNombre,
+          cleanTelefono,
+          cleanDireccion,
+          cleanNit,
+          cleanCi,
+          cleanPasaporte,
+          cleanPaisOrigen,
         ]
       );
 
@@ -151,10 +146,19 @@ router.put(
     const { id } = req.params;
     const { tipo_cliente, nombre, telefono, direccion, nit, ci, pasaporte, pais_origen } = req.body;
 
-    if (!tipo_cliente || !nombre) {
-      res.status(400).json({ message: "El tipo de cliente y nombre son obligatorios" });
+    if (!nombre || !String(nombre).trim()) {
+      res.status(400).json({ message: "El nombre del cliente es obligatorio" });
       return;
     }
+
+    const cleanTipoCliente = tipo_cliente || "CI";
+    const cleanNombre = String(nombre).trim();
+    const cleanTelefono = telefono && String(telefono).trim() && String(telefono).trim() !== "+591" ? String(telefono).trim() : null;
+    const cleanDireccion = direccion && String(direccion).trim() ? String(direccion).trim() : null;
+    const cleanNit = nit && String(nit).trim() ? String(nit).trim() : null;
+    const cleanCi = ci && String(ci).trim() ? String(ci).trim() : null;
+    const cleanPasaporte = pasaporte && String(pasaporte).trim() ? String(pasaporte).trim() : null;
+    const cleanPaisOrigen = pais_origen && String(pais_origen).trim() ? String(pais_origen).trim() : null;
 
     try {
       const [clientRows] = await pool.query("SELECT * FROM clientes WHERE id_cliente = ?", [id]);
@@ -163,17 +167,40 @@ router.put(
         return;
       }
 
+      // Verificar si ya existe CI / NIT / Pasaporte en otro cliente distinto
+      if (cleanCi) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE ci = ? AND id_cliente != ?", [cleanCi, id]);
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe otro cliente registrado con este CI" });
+          return;
+        }
+      }
+      if (cleanNit) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE nit = ? AND id_cliente != ?", [cleanNit, id]);
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe otro cliente registrado con este NIT" });
+          return;
+        }
+      }
+      if (cleanPasaporte) {
+        const [existing] = await pool.query("SELECT id_cliente FROM clientes WHERE pasaporte = ? AND id_cliente != ?", [cleanPasaporte, id]);
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe otro cliente registrado con este Pasaporte" });
+          return;
+        }
+      }
+
       await pool.query(
         "UPDATE clientes SET tipo_cliente = ?, nombre = ?, telefono = ?, direccion = ?, nit = ?, ci = ?, pasaporte = ?, pais_origen = ? WHERE id_cliente = ?",
         [
-          tipo_cliente,
-          nombre,
-          telefono || null,
-          direccion || null,
-          nit || null,
-          ci || null,
-          pasaporte || null,
-          pais_origen || null,
+          cleanTipoCliente,
+          cleanNombre,
+          cleanTelefono,
+          cleanDireccion,
+          cleanNit,
+          cleanCi,
+          cleanPasaporte,
+          cleanPaisOrigen,
           id,
         ]
       );

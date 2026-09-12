@@ -136,28 +136,19 @@ export function ClientCRUD() {
       return;
     }
 
-    if (tipo === "CI" && !docVal.trim()) {
-      toast.error("El CI es requerido");
-      return;
-    }
-    if (tipo === "NIT" && !docVal.trim()) {
-      toast.error("El NIT es requerido");
-      return;
-    }
-    if (tipo === "EXTRANJERO" && (!docVal.trim() || !pais.trim())) {
-      toast.error("El pasaporte y país de origen son requeridos");
-      return;
-    }
+    const cleanDoc = docVal.trim() || null;
+    const cleanPhone =
+      telefono.trim() && telefono.trim() !== "+591" ? telefono.trim() : null;
 
     const bodyData = {
       tipo_cliente: tipo,
       nombre: nombre.trim(),
-      telefono: telefono.trim() || null,
+      telefono: cleanPhone,
       direccion: direccion.trim() || null,
-      ci: tipo === "CI" ? docVal.trim() : null,
-      nit: tipo === "NIT" ? docVal.trim() : null,
-      pasaporte: tipo === "EXTRANJERO" ? docVal.trim() : null,
-      pais_origen: tipo === "EXTRANJERO" ? pais.trim() : null,
+      ci: tipo === "CI" ? cleanDoc : null,
+      nit: tipo === "NIT" ? cleanDoc : null,
+      pasaporte: tipo === "EXTRANJERO" ? cleanDoc : null,
+      pais_origen: tipo === "EXTRANJERO" ? pais.trim() || null : null,
     };
 
     try {
@@ -360,17 +351,17 @@ export function ClientCRUD() {
                 id="c-name"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Juan Pérez Rocha"
+                placeholder=""
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="c-doc">
                 {tipo === "CI"
-                  ? "Cédula de Identidad (CI)"
+                  ? "Cédula de Identidad (CI) (Opcional)"
                   : tipo === "NIT"
-                    ? "NIT"
-                    : "Número de Pasaporte"}
+                    ? "NIT (Opcional)"
+                    : "Número de Pasaporte (Opcional)"}
               </Label>
               <Input
                 id="c-doc"
@@ -378,28 +369,28 @@ export function ClientCRUD() {
                 onChange={(e) => setDocVal(e.target.value)}
                 placeholder={
                   tipo === "CI"
-                    ? "1234567 SC"
+                    ? "1234567 SC (Opcional)"
                     : tipo === "NIT"
-                      ? "1029384756"
-                      : "PE987654"
+                      ? "1029384756 (Opcional)"
+                      : "PE987654 (Opcional)"
                 }
               />
             </div>
 
             {tipo === "EXTRANJERO" && (
               <div className="space-y-2">
-                <Label htmlFor="c-pais">País de Origen</Label>
+                <Label htmlFor="c-pais">País de Origen (Opcional)</Label>
                 <Input
                   id="c-pais"
                   value={pais}
                   onChange={(e) => setPais(e.target.value)}
-                  placeholder="Argentina"
+                  placeholder="Argentina (Opcional)"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="c-tel">Teléfono (WhatsApp)</Label>
+              <Label htmlFor="c-tel">Teléfono / WhatsApp (Opcional)</Label>
               <Input
                 id="c-tel"
                 value={telefono}
@@ -414,18 +405,18 @@ export function ClientCRUD() {
                   }
                   setTelefono(val);
                 }}
-                placeholder="+591 70012345"
+                placeholder="+591 70012345 (Opcional)"
                 className="font-mono"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="c-dir">Dirección</Label>
+              <Label htmlFor="c-dir">Dirección (Opcional)</Label>
               <Input
                 id="c-dir"
                 value={direccion}
                 onChange={(e) => setDireccion(e.target.value)}
-                placeholder="Av. Roca y Coronado, 3er Anillo"
+                placeholder="Av. Roca y Coronado, 3er Anillo (Opcional)"
               />
             </div>
 

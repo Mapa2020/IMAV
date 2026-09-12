@@ -203,19 +203,6 @@ function Index() {
         if (res.ok) {
           const data = await res.json();
           setEmployees(data);
-
-          // Pre-seleccionar el primer receptor si hay
-          const receptor = data.find((e: any) => e.rol === "RECEPCIONISTA");
-          if (receptor) {
-            setReceptionistId(receptor.id_empleado.toString());
-            set("receivedBy", `${receptor.nombre} ${receptor.paterno}`);
-          }
-
-          // Pre-seleccionar el primer mecánico
-          const mecanico = data.find((e: any) => e.rol === "MECANICO");
-          if (mecanico) {
-            setMechanicId(mecanico.id_empleado.toString());
-          }
         }
       } catch (err) {
         console.error("Error al cargar empleados", err);
@@ -301,9 +288,9 @@ function Index() {
 
   const selectVehicle = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    set("plate", vehicle.placa);
-    set("brand", vehicle.marca);
-    set("model", vehicle.modelo);
+    set("plate", vehicle.placa || "");
+    set("brand", vehicle.marca || "");
+    set("model", vehicle.modelo || "");
     set("year", vehicle.anio?.toString() || "");
     set("color", vehicle.color || "");
   };
@@ -325,8 +312,8 @@ function Index() {
         {
           id: Math.random().toString(),
           description: preset?.description ?? "",
-          qty: preset?.qty ?? 1,
-          unitPrice: preset?.unitPrice ?? 0,
+          qty: preset?.qty ?? "",
+          unitPrice: preset?.unitPrice ? preset.unitPrice : "",
           kind: preset?.kind ?? "labor",
           detalle: preset?.detalle ?? "",
         },
@@ -352,41 +339,25 @@ function Index() {
       return;
     }
 
-    if (!data.clientName || !data.clientDoc) {
+    if (!data.clientName?.trim()) {
       toast.error(
-        "Por favor, ingrese el nombre y documento del cliente (Paso 1)",
+        "Por favor, ingrese el nombre del cliente (Paso 1)",
       );
       setStep(1);
       return;
     }
-    if (!data.plate || !data.brand || !data.model) {
-      toast.error("Por favor, llene los datos del vehículo (Paso 2)");
-      setStep(2);
-      return;
-    }
-    if (!receptionistId) {
-      toast.error(
-        "Por favor, seleccione la persona que recibe el vehículo (Paso 3)",
-      );
-      setStep(3);
-      return;
-    }
-    if (!mechanicId) {
-      toast.error("Por favor, seleccione el mecánico asignado (Paso 3)");
-      setStep(3);
-      return;
-    }
 
-    if (!data.complaint) {
-      toast.error(
-        "Por favor, ingrese la falla reportada por el cliente (Paso 3)",
-      );
-      setStep(3);
-      return;
-    }
     if (data.lines.length === 0) {
       toast.error(
         "La proforma debe contener al menos un servicio o repuesto (Paso 4)",
+      );
+      setStep(4);
+      return;
+    }
+
+    if (data.lines.some((l) => !l.qty || Number(l.qty) <= 0)) {
+      toast.error(
+        "Por favor, ingrese una cantidad válida en todos los ítems de la proforma (Paso 4)",
       );
       setStep(4);
       return;
@@ -401,7 +372,10 @@ function Index() {
 
       // 1. Guardar cliente si es nuevo o no estaba seleccionado
       if (!finalClientId) {
-        const docText = data.clientDoc.trim();
+        const docText = data.clientDoc?.trim() || "";
+        const phoneText = data.clientPhone?.trim() || "";
+        const cleanPhone =
+          phoneText && phoneText !== "+591" ? phoneText : null;
         const clientRes = await fetch(`${API_URL}/clients`, {
           method: "POST",
           headers: {
@@ -409,15 +383,15 @@ function Index() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            tipo_cliente: docType,
-            nombre: data.clientName,
-            telefono: data.clientPhone || null,
+            tipo_cliente: docType || "CI",
+            nombre: data.clientName.trim(),
+            telefono: cleanPhone,
             direccion: null,
-            ci: docType === "CI" ? docText : null,
-            nit: docType === "NIT" ? docText : null,
-            pasaporte: docType === "EXTRANJERO" ? docText : null,
+            ci: docType === "CI" && docText ? docText : null,
+            nit: docType === "NIT" && docText ? docText : null,
+            pasaporte: docType === "EXTRANJERO" && docText ? docText : null,
             pais_origen:
-              docType === "EXTRANJERO" ? country.trim() || "Extranjero" : null,
+              docType === "EXTRANJERO" ? country.trim() || null : null,
           }),
         });
 
@@ -440,11 +414,11 @@ function Index() {
           },
           body: JSON.stringify({
             id_cliente: finalClientId,
-            placa: data.plate,
-            marca: data.brand,
-            modelo: data.model,
-            anio: data.year || null,
-            color: data.color || null,
+            placa: data.plate?.trim() ? data.plate.trim().toUpperCase() : null,
+            marca: data.brand?.trim() || null,
+            modelo: data.model?.trim() || null,
+            anio: data.year?.trim() ? parseInt(data.year.trim()) : null,
+            color: data.color?.trim() || null,
           }),
         });
 
@@ -460,6 +434,10 @@ function Index() {
 
       // 3. Registrar Recepción / Ingreso en taller
       const accText = checked.join(", ");
+      const formattedEntryDate = data.entryDate
+        ? `${data.entryDate} ${data.entryTime || "12:00"}:00`
+        : null;
+
       const recRes = await fetch(`${API_URL}/receptions`, {
         method: "POST",
         headers: {
@@ -468,14 +446,15 @@ function Index() {
         },
         body: JSON.stringify({
           id_vehiculo: finalVehicleId,
-          id_empleado_receptor: parseInt(receptionistId),
-          id_mecanico_asignado: parseInt(mechanicId),
+          id_empleado_receptor: receptionistId && receptionistId !== "none" ? parseInt(receptionistId) : null,
+          id_mecanico_asignado: mechanicId && mechanicId !== "none" ? parseInt(mechanicId) : null,
           kilometraje: parseInt(data.mileage) || 0,
           fuelLevel: data.fuelLevel,
           observaciones_estado: data.notes || null,
           deja_accesorios: accText || null,
-          falla_reportada: data.complaint,
+          falla_reportada: data.complaint?.trim() || null,
           estado_ingreso: "EN_REVISION",
+          fecha_ingreso: formattedEntryDate,
         }),
       });
 
@@ -496,10 +475,15 @@ function Index() {
         body: JSON.stringify({
           id_ingreso: finalIngresoId,
           estado: "PENDIENTE",
-          lines: data.lines,
-          discount: data.discount,
+          lines: data.lines.map((l) => ({
+            ...l,
+            qty: Number(l.qty) || 1,
+            unitPrice: Number(l.unitPrice) || 0,
+          })),
+          discount: Number(data.discount) || 0,
           taxRate: data.taxRate,
           observaciones: data.notes,
+          fecha_emision: formattedEntryDate,
         }),
       });
 
@@ -617,7 +601,7 @@ function Index() {
               <TabsTrigger value="proforma-flow">Nueva Proforma</TabsTrigger>
               <TabsTrigger value="proformas">Proformas</TabsTrigger>
               <TabsTrigger value="reports">Informes</TabsTrigger>
-              <TabsTrigger value="receptions">Ingresos</TabsTrigger>
+              <TabsTrigger value="receptions">Datos Taller</TabsTrigger>
               <TabsTrigger value="clients">Clientes</TabsTrigger>
               <TabsTrigger value="vehicles">Vehículos</TabsTrigger>
 
@@ -793,7 +777,7 @@ function Index() {
 
                       <div>
                         <Label className="label-caps text-xs font-bold">
-                          WhatsApp del Cliente
+                          WhatsApp del Cliente (Opcional)
                         </Label>
                         <Input
                           value={data.clientPhone}
@@ -842,20 +826,20 @@ function Index() {
                         <div>
                           <Label className="label-caps text-xs font-bold">
                             {docType === "CI"
-                              ? "Nro. CI"
+                              ? "Nro. CI (Opcional)"
                               : docType === "NIT"
-                                ? "Nro. NIT"
-                                : "Nro. Pasaporte"}
+                                ? "Nro. NIT (Opcional)"
+                                : "Nro. Pasaporte (Opcional)"}
                           </Label>
                           <Input
                             value={data.clientDoc}
                             onChange={(e) => set("clientDoc", e.target.value)}
                             placeholder={
                               docType === "CI"
-                                ? "1234567 SC"
+                                ? "1234567 SC (Opcional)"
                                 : docType === "NIT"
-                                  ? "1029384756"
-                                  : "PE987654"
+                                  ? "1029384756 (Opcional)"
+                                  : "PE987654 (Opcional)"
                             }
                             className="mt-2 font-mono h-10 text-sm sm:text-base font-medium"
                           />
@@ -863,11 +847,11 @@ function Index() {
 
                         {docType === "EXTRANJERO" && (
                           <div>
-                            <Label className="label-caps text-xs font-bold">País de Origen</Label>
+                            <Label className="label-caps text-xs font-bold">País de Origen (Opcional)</Label>
                             <Input
                               value={country}
                               onChange={(e) => setCountry(e.target.value)}
-                              placeholder="Argentina"
+                              placeholder="Argentina (Opcional)"
                               className="mt-2 h-10 text-sm sm:text-base"
                             />
                           </div>
@@ -885,7 +869,7 @@ function Index() {
                         vehículo
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Identificación técnica del vehículo.
+                        Identificación técnica del vehículo (campos opcionales, pueden completarse después).
                       </p>
                     </div>
 
@@ -909,7 +893,7 @@ function Index() {
                                 : "border-border text-muted-foreground hover:bg-surface-2"
                                 }`}
                             >
-                              <span className="font-semibold">{v.marca} {v.modelo}</span> <span className="font-mono text-xs opacity-80">[{v.placa}]</span>
+                              <span className="font-semibold">{[v.marca, v.modelo].filter(Boolean).join(" ") || "Vehículo"}</span> <span className="font-mono text-xs opacity-80">[{v.placa || "S/P"}]</span>
                             </button>
                           ))}
                           <button
@@ -932,24 +916,24 @@ function Index() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="label-caps text-xs font-bold">Placa</Label>
+                        <Label className="label-caps text-xs font-bold">Placa (Opcional)</Label>
                         <Input
                           value={data.plate}
                           onChange={(e) =>
                             set("plate", e.target.value.toUpperCase())
                           }
-                          placeholder="3412 ABC"
+                          placeholder=""
                           className="font-mono uppercase mt-2 h-10 text-sm sm:text-base font-bold tracking-wider"
                           disabled={!isNewVehicle}
                         />
                       </div>
 
                       <div>
-                        <Label className="label-caps text-xs font-bold">Año</Label>
+                        <Label className="label-caps text-xs font-bold">Año (Opcional)</Label>
                         <Input
                           value={data.year}
                           onChange={(e) => set("year", e.target.value)}
-                          placeholder="2019"
+                          placeholder=""
                           inputMode="numeric"
                           className="mt-2 h-10 text-sm sm:text-base font-medium"
                           disabled={!isNewVehicle}
@@ -976,7 +960,7 @@ function Index() {
                           onChange={(e) =>
                             set("vin", e.target.value.toUpperCase())
                           }
-                          placeholder="MR0FZ29G50123456"
+                          placeholder=""
                           className="font-mono uppercase mt-2 h-10 text-sm sm:text-base"
                           disabled={!isNewVehicle}
                         />
@@ -1006,18 +990,26 @@ function Index() {
                         <Select
                           value={receptionistId}
                           onValueChange={(val) => {
-                            setReceptionistId(val);
-                            const emp = employees.find(
-                              (e) => e.id_empleado.toString() === val,
-                            );
-                            if (emp)
-                              set("receivedBy", `${emp.nombre} ${emp.paterno}`);
+                            if (val === "none") {
+                              setReceptionistId("");
+                              set("receivedBy", "");
+                            } else {
+                              setReceptionistId(val);
+                              const emp = employees.find(
+                                (e) => e.id_empleado.toString() === val,
+                              );
+                              if (emp)
+                                set("receivedBy", `${emp.nombre} ${emp.paterno}`);
+                            }
                           }}
                         >
                           <SelectTrigger className="mt-2 h-10 text-sm sm:text-base">
-                            <SelectValue placeholder="Seleccione receptor" />
+                            <SelectValue placeholder="Seleccione receptor (opcional)" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none" className="text-muted-foreground text-sm">
+                              -- Sin asignar (opcional) --
+                            </SelectItem>
                             {employees
                               .filter((e) => e.rol === "RECEPCIONISTA")
                               .map((emp) => (
@@ -1037,12 +1029,17 @@ function Index() {
                         <Label className="label-caps text-xs font-bold">Mecánico Asignado</Label>
                         <Select
                           value={mechanicId}
-                          onValueChange={setMechanicId}
+                          onValueChange={(val) => {
+                            setMechanicId(val === "none" ? "" : val);
+                          }}
                         >
                           <SelectTrigger className="mt-2 h-10 text-sm sm:text-base">
-                            <SelectValue placeholder="Seleccione mecánico asignado" />
+                            <SelectValue placeholder="Seleccione mecánico (opcional)" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none" className="text-muted-foreground text-sm">
+                              -- Sin asignar (opcional) --
+                            </SelectItem>
                             {employees
                               .filter((e) => e.rol === "MECANICO")
                               .map((emp) => (
@@ -1092,7 +1089,7 @@ function Index() {
 
                       <div className="sm:col-span-2">
                         <Label className="label-caps text-xs font-bold">
-                          Falla reportada por el cliente (Problema)
+                          Falla reportada por el cliente (Problema / Opcional)
                         </Label>
                         <Textarea
                           value={data.complaint}
@@ -1169,7 +1166,9 @@ function Index() {
                                   );
                                   if (existingLine) {
                                     updateLine(existingLine.id, {
-                                      qty: existingLine.qty + l.qty,
+                                      qty:
+                                        (Number(existingLine.qty) || 1) +
+                                        (Number(l.qty) || 1),
                                     });
                                     removeLine(l.id);
                                     toast.info(
@@ -1180,9 +1179,10 @@ function Index() {
                                   updateLine(l.id, {
                                     description: desc,
                                     code: code,
-                                    unitPrice: price,
+                                    unitPrice: price > 0 ? price : "",
                                     kind: kind,
                                     detalle: detalle || l.detalle || "",
+                                    qty: l.qty && l.qty !== 1 ? l.qty : "",
                                   });
                                 } else {
                                   updateLine(l.id, { description: desc });
@@ -1191,22 +1191,30 @@ function Index() {
                             />
                             <Input
                               type="number"
-                              value={l.qty}
-                              onChange={(e) =>
+                              value={l.qty === 0 || l.qty === "" ? "" : l.qty}
+                              placeholder=""
+                              onChange={(e) => {
+                                const val = e.target.value;
                                 updateLine(l.id, {
-                                  qty: Number(e.target.value) || 0,
-                                })
-                              }
+                                  qty: val === "" ? "" : Number(val),
+                                });
+                              }}
                               className="text-right px-2 text-sm sm:text-base font-medium h-10"
                             />
                             <Input
                               type="number"
-                              value={l.unitPrice}
-                              onChange={(e) =>
-                                updateLine(l.id, {
-                                  unitPrice: Number(e.target.value) || 0,
-                                })
+                              value={
+                                l.unitPrice === 0 || l.unitPrice === ""
+                                  ? ""
+                                  : l.unitPrice
                               }
+                              placeholder=""
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateLine(l.id, {
+                                  unitPrice: val === "" ? "" : Number(val),
+                                });
+                              }}
                               className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10"
                             />
                             <Select
@@ -1240,7 +1248,7 @@ function Index() {
                           {/* Campo para Explicación del item seleccionado */}
                           <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
                             <span className="text-xs font-semibold text-foreground/80 shrink-0">
-                              ↳ Explicación:
+                              Explicación:
                             </span>
                             <Input
                               value={l.detalle || ""}
@@ -1268,12 +1276,22 @@ function Index() {
 
                     <div className="border-t border-border pt-5">
                       <div className="max-w-xs">
-                        <Label className="label-caps">Descuento (%)</Label>
+                        <Label className="label-caps">Descuento (Bs.)</Label>
                         <Input
                           type="number"
-                          value={data.discount}
+                          value={
+                            data.discount === 0 || data.discount === ""
+                              ? ""
+                              : data.discount
+                          }
+                          placeholder="0.00"
                           onChange={(e) =>
-                            set("discount", Number(e.target.value) || 0)
+                            set(
+                              "discount",
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value),
+                            )
                           }
                           className="font-mono mt-2"
                         />

@@ -44,7 +44,6 @@ export function EmployeeCRUD() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   // Form State
-  const [ci, setCi] = useState("");
   const [nombre, setNombre] = useState("");
   const [paterno, setPaterno] = useState("");
   const [materno, setMaterno] = useState("");
@@ -80,7 +79,6 @@ export function EmployeeCRUD() {
       return;
     }
     setEditingEmployee(null);
-    setCi("");
     setNombre("");
     setPaterno("");
     setMaterno("");
@@ -96,7 +94,6 @@ export function EmployeeCRUD() {
       return;
     }
     setEditingEmployee(emp);
-    setCi(emp.ci);
     setNombre(emp.nombre);
     setPaterno(emp.paterno);
     setMaterno(emp.materno || "");
@@ -109,10 +106,6 @@ export function EmployeeCRUD() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ci.trim()) {
-      toast.error("El CI es requerido");
-      return;
-    }
     if (!nombre.trim()) {
       toast.error("El nombre es requerido");
       return;
@@ -123,7 +116,7 @@ export function EmployeeCRUD() {
     }
 
     const bodyData = {
-      ci: ci.trim(),
+      ci: editingEmployee ? editingEmployee.ci : undefined,
       nombre: nombre.trim(),
       paterno: paterno.trim(),
       materno: materno.trim() || null,
@@ -198,7 +191,7 @@ export function EmployeeCRUD() {
         <div className="relative max-w-sm flex-1">
           <Search className="absolute inset-y-0 left-3 my-auto size-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, CI o teléfono..."
+            placeholder="Buscar por nombre o teléfono..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -215,7 +208,6 @@ export function EmployeeCRUD() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 font-semibold">
-              <TableHead className="w-[120px]">CI</TableHead>
               <TableHead>Nombre Completo</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Teléfono</TableHead>
@@ -226,20 +218,19 @@ export function EmployeeCRUD() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Cargando empleados...
                 </TableCell>
               </TableRow>
             ) : employees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No se encontraron empleados registrados.
                 </TableCell>
               </TableRow>
             ) : (
               employees.map((emp) => (
                 <TableRow key={emp.id_empleado} className="hover:bg-muted/20">
-                  <TableCell className="font-mono text-xs">{emp.ci}</TableCell>
                   <TableCell className="font-medium">
                     {emp.nombre} {emp.paterno} {emp.materno || ""}
                   </TableCell>
@@ -310,27 +301,6 @@ export function EmployeeCRUD() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ci">Documento de Identidad (CI)*</Label>
-                <Input
-                  id="ci"
-                  placeholder="Ej. 1234567"
-                  value={ci}
-                  onChange={(e) => setCi(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefono">Teléfono</Label>
-                <Input
-                  id="telefono"
-                  placeholder="Ej. 76543210"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="nombre">Nombre(s)*</Label>
               <Input
@@ -360,6 +330,16 @@ export function EmployeeCRUD() {
                   onChange={(e) => setMaterno(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="telefono">Teléfono</Label>
+              <Input
+                id="telefono"
+                placeholder="Ej. 76543210 (Opcional)"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

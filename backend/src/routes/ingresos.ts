@@ -41,8 +41,8 @@ router.get("/", protect, async (req: AuthenticatedRequest, res: Response): Promi
       FROM ingresos_taller i
       JOIN vehiculos v ON i.id_vehiculo = v.id_vehiculo
       JOIN clientes c ON v.id_cliente = c.id_cliente
-      JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
-      JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
+      LEFT JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
+      LEFT JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
     `;
     const params: any[] = [];
 
@@ -85,8 +85,8 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
       FROM ingresos_taller i
       JOIN vehiculos v ON i.id_vehiculo = v.id_vehiculo
       JOIN clientes c ON v.id_cliente = c.id_cliente
-      JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
-      JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
+      LEFT JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
+      LEFT JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
       WHERE i.id_ingreso = ?
       `,
       [id]
@@ -129,12 +129,22 @@ router.post(
       fecha_ingreso, // opcional
     } = req.body;
 
-    if (!id_vehiculo || !id_empleado_receptor || !id_mecanico_asignado || !falla_reportada) {
-      res.status(400).json({ message: "Todos los campos obligatorios deben completarse" });
+    if (!id_vehiculo) {
+      res.status(400).json({ message: "El vehículo es obligatorio" });
       return;
     }
 
+    const receptorId = id_empleado_receptor && id_empleado_receptor !== "none" ? Number(id_empleado_receptor) : null;
+    const mecanicoId = id_mecanico_asignado && id_mecanico_asignado !== "none" ? Number(id_mecanico_asignado) : null;
     const nivelCombustibleEnum = mapPercentToFuelEnum(Number(fuelLevel) || 0);
+    const finalFalla = falla_reportada && typeof falla_reportada === "string" && falla_reportada.trim() !== "" ? falla_reportada.trim() : null;
+
+    let cleanFechaIngreso: string | Date = new Date();
+    if (fecha_ingreso) {
+      cleanFechaIngreso = typeof fecha_ingreso === "string" && fecha_ingreso.includes("T")
+        ? fecha_ingreso.replace("T", " ").slice(0, 19)
+        : (typeof fecha_ingreso === "string" && fecha_ingreso.length === 10 ? `${fecha_ingreso} 12:00:00` : String(fecha_ingreso));
+    }
 
     try {
       const [result] = await pool.query(
@@ -145,15 +155,15 @@ router.post(
         `,
         [
           id_vehiculo,
-          id_empleado_receptor,
-          id_mecanico_asignado,
+          receptorId,
+          mecanicoId,
           Number(kilometraje) || 0,
           nivelCombustibleEnum,
           observaciones_estado || null,
           deja_accesorios || null,
-          falla_reportada,
+          finalFalla,
           estado_ingreso || "EN_REVISION",
-          fecha_ingreso ? new Date(fecha_ingreso) : new Date(),
+          cleanFechaIngreso,
         ]
       );
 
@@ -187,14 +197,25 @@ router.put(
       falla_reportada,
       estado_ingreso,
       fecha_salida,
+      fecha_ingreso,
     } = req.body;
 
-    if (!id_vehiculo || !id_empleado_receptor || !id_mecanico_asignado || !falla_reportada) {
-      res.status(400).json({ message: "Todos los campos obligatorios deben completarse" });
+    if (!id_vehiculo) {
+      res.status(400).json({ message: "El vehículo es obligatorio" });
       return;
     }
 
+    const receptorId = id_empleado_receptor && id_empleado_receptor !== "none" ? Number(id_empleado_receptor) : null;
+    const mecanicoId = id_mecanico_asignado && id_mecanico_asignado !== "none" ? Number(id_mecanico_asignado) : null;
     const nivelCombustibleEnum = mapPercentToFuelEnum(Number(fuelLevel) || 0);
+    const finalFalla = falla_reportada && typeof falla_reportada === "string" && falla_reportada.trim() !== "" ? falla_reportada.trim() : null;
+
+    let cleanFechaIngreso: string | null = null;
+    if (fecha_ingreso) {
+      cleanFechaIngreso = typeof fecha_ingreso === "string" && fecha_ingreso.includes("T")
+        ? fecha_ingreso.replace("T", " ").slice(0, 19)
+        : (typeof fecha_ingreso === "string" && fecha_ingreso.length === 10 ? `${fecha_ingreso} 12:00:00` : String(fecha_ingreso));
+    }
 
     try {
       const [receptionRows] = await pool.query("SELECT * FROM ingresos_taller WHERE id_ingreso = ?", [id]);
@@ -215,20 +236,22 @@ router.put(
           deja_accesorios = ?, 
           falla_reportada = ?, 
           estado_ingreso = ?,
-          fecha_salida = ?
+          fecha_salida = ?,
+          fecha_ingreso = COALESCE(?, fecha_ingreso)
         WHERE id_ingreso = ?
         `,
         [
           id_vehiculo,
-          id_empleado_receptor,
-          id_mecanico_asignado,
+          receptorId,
+          mecanicoId,
           Number(kilometraje) || 0,
           nivelCombustibleEnum,
           observaciones_estado || null,
           deja_accesorios || null,
-          falla_reportada,
+          finalFalla,
           estado_ingreso || "EN_REVISION",
           fecha_salida ? new Date(fecha_salida) : null,
+          cleanFechaIngreso,
           id,
         ]
       );

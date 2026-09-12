@@ -23,7 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const API_URL =
-  import.meta.env.VITE_API_URL ||
+  import.meta.env["VITE_API_URL"] ||
   (typeof window !== "undefined"
     ? `${window.location.protocol}//${window.location.hostname}:5000/api`
     : "http://localhost:5000/api");
@@ -43,8 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Verificar si el token JWT expiró
         const parts = savedToken.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
+        const tokenPayload = parts[1];
+        if (parts.length === 3 && tokenPayload) {
+          const payload = JSON.parse(atob(tokenPayload));
           if (payload.exp && payload.exp * 1000 < Date.now()) {
             localStorage.removeItem("imav_token");
             localStorage.removeItem("imav_user");

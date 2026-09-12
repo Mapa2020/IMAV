@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TemplateManagerModal, type DocumentTemplate } from "./TemplateManagerModal";
-import { ReportDocument, type TechnicalReport } from "./ReportDocument";
+import { ReportDocument, formatReportNumber, type TechnicalReport } from "./ReportDocument";
 
 interface Client {
   id_cliente: number;
@@ -48,9 +48,9 @@ interface Client {
 interface Vehicle {
   id_vehiculo: number;
   id_cliente: number;
-  placa: string;
-  marca: string;
-  modelo: string;
+  placa: string | null;
+  marca: string | null;
+  modelo: string | null;
   anio: number | null;
   color: string | null;
 }
@@ -187,8 +187,9 @@ export function ReportCRUD() {
 
     const v = clientVehicles.find((veh) => veh.id_vehiculo.toString() === vehicleId);
     if (v) {
-      setVehiculoDescripcion(`${v.marca} ${v.modelo}${v.anio ? ` (${v.anio})` : ""}`);
-      setPlaca(v.placa);
+      const desc = [v.marca, v.modelo, v.anio ? `(${v.anio})` : ""].filter(Boolean).join(" ");
+      setVehiculoDescripcion(desc || "Vehículo / Maquinaria");
+      setPlaca(v.placa || "");
     }
   };
 
@@ -216,8 +217,7 @@ export function ReportCRUD() {
     setCiudad("Santa Cruz");
 
     // Fetch next sequential number according to document type (INF or CAR)
-    const currentYear = new Date().getFullYear();
-    const fallback = type === "carta" ? `CAR-${currentYear}-001` : `INF-${currentYear}-001`;
+    const fallback = type === "carta" ? "CAR-0001" : "INF-0001";
     try {
       const res = await fetch(`${API_URL}/reports/next-number?type=${type}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -248,16 +248,16 @@ export function ReportCRUD() {
     setDestinatarioNombre(rep.destinatario_nombre);
     setDestinatarioAtencion(rep.destinatario_atencion || "");
     setVehiculoDescripcion(rep.vehiculo_descripcion);
-    setPlaca(rep.placa);
+    setPlaca(rep.placa || "");
     setKilometraje(rep.kilometraje ? rep.kilometraje.toString() : "");
     setReferencia(rep.referencia);
     setContenido(rep.contenido);
     setCostoEstimado(rep.costo_estimado ? rep.costo_estimado.toString() : "");
     setConclusion(
       rep.conclusion ||
-        (isLetter
-          ? "Sin otro particular, me despido con las consideraciones más distinguidas."
-          : "Es todo lo que puedo informar para los fines correspondientes.")
+      (isLetter
+        ? "Sin otro particular, me despido con las consideraciones más distinguidas."
+        : "Es todo lo que puedo informar para los fines correspondientes.")
     );
     setFirmanteNombre(rep.firmante_nombre || "IMAV MOTORS S.R.L.");
     setFirmanteCargo(rep.firmante_cargo || "Servicio Integral Automotriz");
@@ -279,8 +279,8 @@ export function ReportCRUD() {
       toast.error("Por favor seleccione el cliente");
       return;
     }
-    if (!destinatarioNombre.trim() || !placa.trim() || !vehiculoDescripcion.trim()) {
-      toast.error("Complete los datos del destinatario, vehículo y placa");
+    if (!destinatarioNombre.trim() || !vehiculoDescripcion.trim()) {
+      toast.error("Complete los datos del destinatario y la descripción del vehículo");
       return;
     }
     if (!referencia.trim()) {
@@ -302,7 +302,7 @@ export function ReportCRUD() {
         destinatario_nombre: destinatarioNombre,
         destinatario_atencion: destinatarioAtencion || null,
         vehiculo_descripcion: vehiculoDescripcion,
-        placa: placa.toUpperCase(),
+        placa: placa.trim() ? placa.trim().toUpperCase() : null,
         kilometraje: kilometraje ? parseInt(kilometraje, 10) : null,
         referencia,
         contenido,
@@ -373,13 +373,13 @@ export function ReportCRUD() {
   // Live preview report object connected directly to form state
   const liveReport: TechnicalReport = {
     id_informe: editingReport?.id_informe,
-    numero_informe: numeroInforme || "INF-2026-001",
+    numero_informe: numeroInforme || (docType === "carta" ? "CAR-0001" : "INF-0001"),
     fecha: fecha || new Date().toISOString().slice(0, 10),
     ciudad: ciudad || "Santa Cruz",
     destinatario_nombre: destinatarioNombre || "Nombre del Cliente / Empresa",
     destinatario_atencion: destinatarioAtencion || undefined,
     vehiculo_descripcion: vehiculoDescripcion || "Descripción del Vehículo",
-    placa: placa || "s/p",
+    placa: placa?.trim() ? placa.trim().toUpperCase() : "S/P",
     kilometraje: kilometraje ? parseInt(kilometraje, 10) : undefined,
     referencia: referencia || "TITULO O ASUNTO DEL INFORME TECNICO",
     contenido:
@@ -412,7 +412,7 @@ export function ReportCRUD() {
                 <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
                   <FileText className="size-5 text-primary" />
                   {editingReport
-                    ? `Editar ${docType === "carta" ? "Carta" : "Informe"}: ${editingReport.numero_informe}`
+                    ? `Editar ${docType === "carta" ? "Carta" : "Informe"}: ${formatReportNumber(editingReport.numero_informe)}`
                     : `Emisión de ${docType === "carta" ? "Nueva Carta Formal" : "Nuevo Informe Técnico"}`}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -510,7 +510,7 @@ export function ReportCRUD() {
                   <Input
                     value={numeroInforme}
                     onChange={(e) => setNumeroInforme(e.target.value)}
-                    placeholder={docType === "carta" ? "CAR-2026-001" : "INF-2026-001"}
+                    placeholder={docType === "carta" ? "CAR-0001" : "INF-0001"}
                     className="font-mono font-bold"
                     required
                   />
@@ -580,15 +580,15 @@ export function ReportCRUD() {
                             !selectedClientId
                               ? "Seleccione primero un cliente..."
                               : clientVehicles.length === 0
-                              ? "El cliente no tiene vehículos guardados"
-                              : "Elegir vehículo..."
+                                ? "El cliente no tiene vehículos guardados"
+                                : "Elegir vehículo..."
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
                         {clientVehicles.map((v) => (
                           <SelectItem key={v.id_vehiculo} value={v.id_vehiculo.toString()}>
-                            {v.marca} {v.modelo} — [{v.placa}]
+                            {[v.marca, v.modelo].filter(Boolean).join(" ") || "Vehículo"} — [{v.placa || "S/P"}]
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -629,13 +629,12 @@ export function ReportCRUD() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Placa</Label>
+                      <Label className="text-xs">Placa (Opcional)</Label>
                       <Input
                         value={placa}
                         onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-                        placeholder="3412 ABC o s/p"
+                        placeholder="Ej: 1234-XYZ (opcional)"
                         className="font-mono uppercase"
-                        required
                       />
                     </div>
 
@@ -760,7 +759,7 @@ export function ReportCRUD() {
                   <FileText className="size-3.5 text-primary" /> Vista previa en vivo del documento
                 </p>
                 <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-2 py-0.5 rounded border">
-                  Hoja Carta (8.5&quot; × 11.0&quot;)
+                  Hoja Carta (8.5&quot; × 10.75&quot;)
                 </span>
               </div>
               <div className="border border-border rounded-xl shadow-md overflow-hidden bg-card p-1 sm:p-2">
@@ -837,7 +836,7 @@ export function ReportCRUD() {
                     <TableRow key={rep.id_informe}>
                       <TableCell className="whitespace-nowrap">
                         <span className="font-mono font-bold text-xs text-primary block">
-                          {rep.numero_informe}
+                          {formatReportNumber(rep.numero_informe)}
                         </span>
                         {rep.numero_informe?.toUpperCase().startsWith("CAR") ? (
                           <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25 mt-0.5">
@@ -863,7 +862,7 @@ export function ReportCRUD() {
                       <TableCell>
                         <div className="text-sm font-medium">{rep.vehiculo_descripcion}</div>
                         <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
-                          {rep.placa}
+                          {rep.placa || "S/P"}
                         </span>
                       </TableCell>
                       <TableCell className="max-w-[280px] truncate text-xs font-semibold text-foreground/90" title={rep.referencia}>

@@ -32,12 +32,12 @@ interface Reception {
   marca: string;
   modelo: string;
   nombre_cliente: string;
-  id_empleado_receptor: number;
-  nombre_receptor: string;
-  paterno_receptor: string;
-  id_mecanico_asignado: number;
-  nombre_mecanico: string;
-  paterno_mecanico: string;
+  id_empleado_receptor?: number | null;
+  nombre_receptor?: string | null;
+  paterno_receptor?: string | null;
+  id_mecanico_asignado?: number | null;
+  nombre_mecanico?: string | null;
+  paterno_mecanico?: string | null;
   fecha_ingreso: string;
   kilometraje: number;
   nivel_combustible: string;
@@ -76,6 +76,7 @@ export function ReceptionCRUD() {
   const [falla, setFalla] = useState("");
   const [estado, setEstado] = useState("EN_REVISION");
   const [accessories, setAccessories] = useState<string[]>([]);
+  const [fechaIngreso, setFechaIngreso] = useState("");
 
   const fetchReceptions = async () => {
     setLoading(true);
@@ -89,6 +90,7 @@ export function ReceptionCRUD() {
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error al cargar recepciones");
     } finally {
       setLoading(false);
     }
@@ -124,13 +126,14 @@ export function ReceptionCRUD() {
       return;
     }
     setEditingRec(rec);
-    setIdReceptor(rec.id_empleado_receptor.toString());
-    setIdMecanico(rec.id_mecanico_asignado.toString());
+    setIdReceptor(rec.id_empleado_receptor ? rec.id_empleado_receptor.toString() : "none");
+    setIdMecanico(rec.id_mecanico_asignado ? rec.id_mecanico_asignado.toString() : "none");
     setKilometraje(rec.kilometraje.toString());
     setFuelLevel(rec.nivel_combustible_porcentaje);
     setObsEstado(rec.observaciones_estado || "");
     setFalla(rec.falla_reportada);
     setEstado(rec.estado_ingreso);
+    setFechaIngreso(rec.fecha_ingreso ? String(rec.fecha_ingreso).slice(0, 10) : "");
     
     // Parse accessories string to array
     const accList = rec.deja_accesorios
@@ -149,21 +152,18 @@ export function ReceptionCRUD() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!idReceptor || !idMecanico || !falla.trim()) {
-      toast.error("Por favor complete los campos obligatorios");
-      return;
-    }
 
     const bodyData = {
       id_vehiculo: editingRec?.id_vehiculo,
-      id_empleado_receptor: parseInt(idReceptor),
-      id_mecanico_asignado: parseInt(idMecanico),
+      id_empleado_receptor: idReceptor && idReceptor !== "none" ? parseInt(idReceptor) : null,
+      id_mecanico_asignado: idMecanico && idMecanico !== "none" ? parseInt(idMecanico) : null,
       kilometraje: parseInt(kilometraje) || 0,
       fuelLevel,
       observaciones_estado: obsEstado.trim() || null,
       deja_accesorios: accessories.join(", ") || null,
-      falla_reportada: falla.trim(),
+      falla_reportada: falla.trim() || null,
       estado_ingreso: estado,
+      fecha_ingreso: fechaIngreso ? `${fechaIngreso} 12:00:00` : null,
     };
 
     try {
@@ -270,12 +270,12 @@ export function ReceptionCRUD() {
                 return (
                   <TableRow key={r.id_ingreso}>
                     <TableCell>{date}</TableCell>
-                    <TableCell className="font-mono text-sm font-bold text-foreground">{r.placa}</TableCell>
-                    <TableCell className="text-sm font-medium text-foreground whitespace-normal">{r.marca} {r.modelo}</TableCell>
+                    <TableCell className="font-mono text-sm font-bold text-foreground">{r.placa || "S/P"}</TableCell>
+                    <TableCell className="text-sm font-medium text-foreground whitespace-normal">{[r.marca, r.modelo].filter(Boolean).join(" ") || "—"}</TableCell>
                     <TableCell className="text-sm sm:text-base font-semibold text-foreground max-w-[240px] whitespace-normal">{r.nombre_cliente}</TableCell>
                     <TableCell className="text-xs leading-normal">
-                      <p>Rec: {r.nombre_receptor} {r.paterno_receptor}</p>
-                      <p className="text-muted-foreground">Mec: {r.nombre_mecanico} {r.paterno_mecanico}</p>
+                      <p>Rec: {r.nombre_receptor ? `${r.nombre_receptor} ${r.paterno_receptor || ""}` : "Sin asignar"}</p>
+                      <p className="text-muted-foreground">Mec: {r.nombre_mecanico ? `${r.nombre_mecanico} ${r.paterno_mecanico || ""}` : "Sin asignar"}</p>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
@@ -320,7 +320,7 @@ export function ReceptionCRUD() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Editar Ingreso — Placa {editingRec?.placa}</DialogTitle>
+            <DialogTitle>Editar Datos Taller — Placa {editingRec?.placa || "S/P"}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -329,9 +329,10 @@ export function ReceptionCRUD() {
                 <Label>Recibido por (Receptor)</Label>
                 <Select value={idReceptor} onValueChange={setIdReceptor}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccione receptor" />
+                    <SelectValue placeholder="Seleccione receptor (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">-- Sin asignar (opcional) --</SelectItem>
                     {receptores.map((emp) => (
                       <SelectItem key={emp.id_empleado} value={emp.id_empleado.toString()}>
                         {emp.nombre} {emp.paterno}
@@ -345,9 +346,10 @@ export function ReceptionCRUD() {
                 <Label>Mecánico Asignado</Label>
                 <Select value={idMecanico} onValueChange={setIdMecanico}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccione mecánico" />
+                    <SelectValue placeholder="Seleccione mecánico (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">-- Sin asignar (opcional) --</SelectItem>
                     {mecanicos.map((emp) => (
                       <SelectItem key={emp.id_empleado} value={emp.id_empleado.toString()}>
                         {emp.nombre} {emp.paterno}
@@ -359,7 +361,17 @@ export function ReceptionCRUD() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2">
+                <Label>Fecha de Ingreso</Label>
+                <Input
+                  type="date"
+                  value={fechaIngreso}
+                  onChange={(e) => setFechaIngreso(e.target.value)}
+                  className="h-10 text-sm font-medium"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>Estado de Ingreso</Label>
                 <Select value={estado} onValueChange={setEstado}>
                   <SelectTrigger>
@@ -378,7 +390,7 @@ export function ReceptionCRUD() {
 
 
             <div className="space-y-2">
-              <Label htmlFor="r-falla">Falla Reportada por el Cliente</Label>
+              <Label htmlFor="r-falla">Falla Reportada por el Cliente (Opcional)</Label>
               <Textarea
                 id="r-falla"
                 value={falla}

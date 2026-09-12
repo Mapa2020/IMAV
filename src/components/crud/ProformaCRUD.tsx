@@ -52,8 +52,8 @@ interface ServiceLine {
   id: string;
   code?: string;
   description: string;
-  qty: number;
-  unitPrice: number;
+  qty: number | "";
+  unitPrice: number | "";
   kind: "labor" | "part";
   detalle?: string;
 }
@@ -70,9 +70,10 @@ export function ProformaCRUD() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [lines, setLines] = useState<ServiceLine[]>([]);
-  const [discount, setDiscount] = useState<number>(0);
+  const [discount, setDiscount] = useState<number | "">(0);
   const [taxRate, setTaxRate] = useState<number>(13);
   const [obsText, setObsText] = useState<string>("");
+  const [fechaEmision, setFechaEmision] = useState<string>("");
 
   const fetchProformas = async () => {
     setLoading(true);
@@ -117,6 +118,8 @@ export function ProformaCRUD() {
       setDiscount(data.discount || 0);
       setTaxRate(data.taxRate || 13);
       setObsText(data.observaciones || "");
+      const rawDate = data.fecha_emision || prof.fecha_emision;
+      setFechaEmision(rawDate ? String(rawDate).slice(0, 10) : new Date().toISOString().slice(0, 10));
 
       const loadedLines = (data.lines || []).map((l: ServiceLine) => ({
         ...l,
@@ -137,8 +140,8 @@ export function ProformaCRUD() {
       {
         id: Math.random().toString(),
         description: preset?.description ?? "",
-        qty: preset?.qty ?? 1,
-        unitPrice: preset?.unitPrice ?? 0,
+        qty: preset?.qty ?? "",
+        unitPrice: preset?.unitPrice ? preset.unitPrice : "",
         kind: preset?.kind ?? "labor",
         detalle: preset?.detalle ?? "",
       },
@@ -166,16 +169,22 @@ export function ProformaCRUD() {
       return;
     }
 
+    if (lines.some((l) => !l.qty || Number(l.qty) <= 0)) {
+      toast.error("Por favor, ingrese una cantidad válida para todos los ítems");
+      return;
+    }
+
     const bodyData = {
       lines: lines.map((l) => ({
         description: l.description,
-        qty: l.qty,
-        unitPrice: l.unitPrice,
+        qty: Number(l.qty) || 1,
+        unitPrice: Number(l.unitPrice) || 0,
         kind: l.kind,
       })),
-      discount,
+      discount: Number(discount) || 0,
       taxRate: 0,
       observaciones: obsText,
+      fecha_emision: fechaEmision ? `${fechaEmision} 12:00:00` : null,
     };
 
     try {
@@ -284,7 +293,7 @@ export function ProformaCRUD() {
             ) : (
               proformas.map((p) => {
                 const date = new Date(p.fecha_emision);
-                const code = `PF-${date.getFullYear()}-${String(p.numero_proforma || p.id_proforma).padStart(4, "0")}`;
+                const code = `PF-${String(p.numero_proforma || p.id_proforma).padStart(4, "0")}`;
                 return (
                   <TableRow key={p.id_proforma}>
                     <TableCell className="font-mono font-medium text-xs text-primary">
@@ -363,6 +372,18 @@ export function ProformaCRUD() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-lg border border-border bg-surface-2/40">
+              <div className="flex items-center gap-3">
+                <Label className="label-caps text-xs font-bold whitespace-nowrap">Fecha de Emisión:</Label>
+                <Input
+                  type="date"
+                  value={fechaEmision}
+                  onChange={(e) => setFechaEmision(e.target.value)}
+                  className="h-9 w-44 font-medium text-sm"
+                />
+              </div>
+            </div>
+
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <Label className="label-caps text-xs font-bold">
@@ -418,7 +439,9 @@ export function ProformaCRUD() {
                             );
                             if (existingLine) {
                               updateLine(existingLine.id, {
-                                qty: existingLine.qty + l.qty,
+                                qty:
+                                  (Number(existingLine.qty) || 1) +
+                                  (Number(l.qty) || 1),
                               });
                               removeLine(l.id);
                               toast.info(
@@ -429,9 +452,10 @@ export function ProformaCRUD() {
                             updateLine(l.id, {
                               description: desc,
                               code: code,
-                              unitPrice: price,
+                              unitPrice: price > 0 ? price : "",
                               kind: kind,
                               detalle: detalle || l.detalle || "",
+                              qty: l.qty && l.qty !== 1 ? l.qty : "",
                             });
                           } else {
                             updateLine(l.id, { description: desc });
@@ -440,22 +464,30 @@ export function ProformaCRUD() {
                       />
                       <Input
                         type="number"
-                        value={l.qty}
-                        onChange={(e) =>
+                        value={l.qty === 0 || l.qty === "" ? "" : l.qty}
+                        placeholder=""
+                        onChange={(e) => {
+                          const val = e.target.value;
                           updateLine(l.id, {
-                            qty: Number(e.target.value) || 0,
-                          })
-                        }
+                            qty: val === "" ? "" : Number(val),
+                          });
+                        }}
                         className="text-right px-2 text-sm sm:text-base font-medium h-10"
                       />
                       <Input
                         type="number"
-                        value={l.unitPrice}
-                        onChange={(e) =>
-                          updateLine(l.id, {
-                            unitPrice: Number(e.target.value) || 0,
-                          })
+                        value={
+                          l.unitPrice === 0 || l.unitPrice === ""
+                            ? ""
+                            : l.unitPrice
                         }
+                        placeholder=""
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateLine(l.id, {
+                            unitPrice: val === "" ? "" : Number(val),
+                          });
+                        }}
                         className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10"
                       />
                       <Select
@@ -487,7 +519,7 @@ export function ProformaCRUD() {
                     {/* Explicación del item */}
                     <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
                       <span className="text-xs font-semibold text-foreground/80 shrink-0">
-                        ↳ Explicación:
+                        Explicación:
                       </span>
                       <Input
                         value={l.detalle || ""}
@@ -504,13 +536,18 @@ export function ProformaCRUD() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="p-desc">Descuento (%)</Label>
+              <Label htmlFor="p-desc">Descuento (Bs.)</Label>
               <Input
                 id="p-desc"
                 type="number"
-                value={discount}
-                onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                className="max-w-xs"
+                value={discount === 0 || discount === "" ? "" : discount}
+                placeholder="0.00"
+                onChange={(e) =>
+                  setDiscount(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                className="max-w-xs font-mono"
               />
             </div>
 

@@ -53,9 +53,8 @@ function ProformaView() {
 
   useEffect(() => {
     if (proforma) {
-      const year = new Date(proforma.fecha_emision).getFullYear();
       const padId = String(proforma.numero_proforma || proforma.id_proforma).padStart(4, "0");
-      document.title = `IMAV_PF-${year}-${padId}`;
+      document.title = `IMAV_PF-${padId}`;
     }
     return () => {
       document.title = "IMAV Motors S.R.L.";
@@ -125,8 +124,16 @@ function ProformaView() {
     mileage: proforma.kilometraje?.toString() || "",
     fuel: proforma.nivel_combustible || "Gasolina",
     vin: proforma.vin || "",
-    receivedBy: `${proforma.nombre_receptor} ${proforma.paterno_receptor}`,
-    entryDate: proforma.fecha_ingreso ? (new Date(proforma.fecha_ingreso).toISOString().split("T")[0] || "") : "",
+    receivedBy: proforma.nombre_receptor ? `${proforma.nombre_receptor} ${proforma.paterno_receptor || ""}`.trim() : "",
+    entryDate: proforma.fecha_emision
+      ? (typeof proforma.fecha_emision === "string"
+          ? proforma.fecha_emision.slice(0, 10)
+          : new Date(proforma.fecha_emision).toISOString().split("T")[0])
+      : (proforma.fecha_ingreso
+          ? (typeof proforma.fecha_ingreso === "string"
+              ? proforma.fecha_ingreso.slice(0, 10)
+              : new Date(proforma.fecha_ingreso).toISOString().split("T")[0])
+          : ""),
     entryTime: proforma.fecha_ingreso ? new Date(proforma.fecha_ingreso).toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" }) : "",
     fuelLevel: proforma.nivel_combustible_porcentaje || 50,
     complaint: proforma.falla_reportada || "",
@@ -136,7 +143,7 @@ function ProformaView() {
     taxRate: proforma.taxRate || 13,
   };
 
-  const code = `PF-${new Date(proforma.fecha_emision).getFullYear()}-${String(proforma.numero_proforma || proforma.id_proforma).padStart(4, "0")}`;
+  const code = `PF-${String(proforma.numero_proforma || proforma.id_proforma).padStart(4, "0")}`;
   const t = totals(proformaData);
 
   // Enlaces de WhatsApp
@@ -242,7 +249,7 @@ ${proformaUrl}`;
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12 print:bg-paper print:p-0">
+    <div className="min-h-screen bg-background pb-12 print:min-h-0 print:h-auto print:m-0 print:p-0 print:pb-0 print:bg-white print:block">
       <Toaster position="top-center" />
 
       {/* Barra superior (se oculta al imprimir) */}
@@ -264,7 +271,7 @@ ${proformaUrl}`;
         </div>
       </header>
 
-      <main className="mx-auto mt-6 max-w-4xl px-4 print:mt-0 print:max-w-none print:px-0">
+      <main className="mx-auto mt-6 max-w-4xl px-4 print:m-0 print:mt-0 print:p-0 print:w-full print:max-w-none print:block">
         {/* Banner de Estado (se oculta al imprimir) */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 print:hidden">
           <div className="flex items-center gap-3">
@@ -311,7 +318,7 @@ ${proformaUrl}`;
         </div>
 
         {/* Visualización del documento proforma */}
-        <div className="shadow-lg border border-border rounded-xl bg-card print:shadow-none print:border-none print:rounded-none print:bg-transparent">
+        <div className="shadow-lg border border-border rounded-xl bg-white print:shadow-none print:border-none print:rounded-none print:bg-white print:m-0 print:p-0 print:block">
           <ProformaDocument data={proformaData} code={code} />
         </div>
 

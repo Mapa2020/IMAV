@@ -97,7 +97,7 @@ router.get("/", protect, async (req: AuthenticatedRequest, res: Response): Promi
       let proformaIdSearch: number | null = null;
       const cleanQuery = String(query).trim().toUpperCase();
       
-      const match = cleanQuery.match(/PF-\d{4}-(\d+)/) || cleanQuery.match(/^0*(\d+)$/);
+      const match = cleanQuery.match(/PF-(?:\d{4}-)?(\d+)/) || cleanQuery.match(/^0*(\d+)$/);
       if (match) {
         proformaIdSearch = parseInt(match[1], 10);
       }
@@ -107,8 +107,8 @@ router.get("/", protect, async (req: AuthenticatedRequest, res: Response): Promi
       params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
 
       if (proformaIdSearch !== null && !isNaN(proformaIdSearch)) {
-        sql += ` OR p.id_proforma = ?`;
-        params.push(proformaIdSearch);
+        sql += ` OR p.id_proforma = ? OR p.numero_proforma = ?`;
+        params.push(proformaIdSearch, proformaIdSearch);
       }
     }
 
@@ -166,8 +166,8 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
       JOIN ingresos_taller i ON p.id_ingreso = i.id_ingreso
       JOIN vehiculos v ON i.id_vehiculo = v.id_vehiculo
       JOIN clientes c ON v.id_cliente = c.id_cliente
-      JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
-      JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
+      LEFT JOIN empleados er ON i.id_empleado_receptor = er.id_empleado
+      LEFT JOIN empleados em ON i.id_mecanico_asignado = em.id_empleado
       WHERE p.id_proforma = ?
       `,
       [id]
@@ -239,7 +239,7 @@ router.post(
   protect,
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const { id_ingreso, estado, lines, discount, taxRate, observaciones } = req.body;
+    const { id_ingreso, estado, lines, discount, taxRate, observaciones, fecha_emision } = req.body;
 
     if (!id_ingreso || !lines || !Array.isArray(lines)) {
       res.status(400).json({ message: "El ID de ingreso y las líneas son requeridos" });
@@ -259,8 +259,8 @@ router.post(
 
       // 1. Calcular monto total (subtotal, descuento, iva)
       const subtotal = validLines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 1) * (Number(l.unitPrice) || 0), 0);
-      const discountAmount = (subtotal * (Number(discount) || 0)) / 100;
-      const taxable = subtotal - discountAmount;
+      const discountAmount = Number(discount) || 0;
+      const taxable = Math.max(0, subtotal - discountAmount);
       const taxAmount = (taxable * (Number(taxRate) || 0)) / 100;
       const totalAmount = taxable + taxAmount;
 
@@ -279,14 +279,35 @@ router.post(
       );
       const nextNum = ((maxNumResult as any[])[0]?.max_num || 0) + 1;
 
-      // 4. Insertar la proforma
-      const [proformaResult] = await connection.query(
-        "INSERT INTO proformas (id_ingreso, estado, monto_total, observaciones, numero_proforma) VALUES (?, ?, ?, ?, ?)",
-        [id_ingreso, estado || "PENDIENTE", totalAmount, obsJson, nextNum]
-      );
+      // 4. Formatear fecha limpia si fue proporcionada
+      let cleanDate: string | null = null;
+      if (fecha_emision) {
+        cleanDate = typeof fecha_emision === "string" && fecha_emision.includes("T")
+          ? fecha_emision.replace("T", " ").slice(0, 19)
+          : (typeof fecha_emision === "string" && fecha_emision.length === 10 ? `${fecha_emision} 12:00:00` : String(fecha_emision));
+      }
+
+      // 5. Insertar la proforma
+      let proformaResult: any;
+      if (cleanDate) {
+        [proformaResult] = await connection.query(
+          "INSERT INTO proformas (id_ingreso, estado, monto_total, observaciones, numero_proforma, fecha_emision) VALUES (?, ?, ?, ?, ?, ?)",
+          [id_ingreso, estado || "PENDIENTE", totalAmount, obsJson, nextNum, cleanDate]
+        );
+        // Sincronizar fecha en ingreso al taller
+        await connection.query(
+          "UPDATE ingresos_taller SET fecha_ingreso = ? WHERE id_ingreso = ?",
+          [cleanDate, id_ingreso]
+        );
+      } else {
+        [proformaResult] = await connection.query(
+          "INSERT INTO proformas (id_ingreso, estado, monto_total, observaciones, numero_proforma) VALUES (?, ?, ?, ?, ?)",
+          [id_ingreso, estado || "PENDIENTE", totalAmount, obsJson, nextNum]
+        );
+      }
       const idProforma = (proformaResult as any).insertId;
 
-      // 5. Guardar líneas de detalle
+      // 6. Guardar líneas de detalle
       for (const line of validLines) {
         // Encontrar o crear el item en la BD y guardar su detalle
         const idItem = await findOrCreateItem(
@@ -328,7 +349,7 @@ router.put(
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { estado, lines, discount, taxRate, observaciones } = req.body;
+    const { estado, lines, discount, taxRate, observaciones, fecha_emision } = req.body;
 
     if (!lines || !Array.isArray(lines)) {
       res.status(400).json({ message: "Las líneas de detalle son requeridas" });
@@ -346,16 +367,17 @@ router.put(
       await connection.beginTransaction();
 
       // Verificar que exista la proforma
-      const [existing] = await connection.query("SELECT id_proforma FROM proformas WHERE id_proforma = ?", [id]);
+      const [existing] = await connection.query("SELECT id_proforma, id_ingreso FROM proformas WHERE id_proforma = ?", [id]);
       if ((existing as any[]).length === 0) {
         res.status(404).json({ message: "Proforma no encontrada" });
         return;
       }
+      const idIngreso = (existing as any[])[0].id_ingreso;
 
       // 1. Calcular monto total
       const subtotal = validLines.reduce((sum: number, l: any) => sum + (Number(l.qty) || 1) * (Number(l.unitPrice) || 0), 0);
-      const discountAmount = (subtotal * (Number(discount) || 0)) / 100;
-      const taxable = subtotal - discountAmount;
+      const discountAmount = Number(discount) || 0;
+      const taxable = Math.max(0, subtotal - discountAmount);
       const taxAmount = (taxable * (Number(taxRate) || 0)) / 100;
       const totalAmount = taxable + taxAmount;
 
@@ -365,17 +387,45 @@ router.put(
         taxRate: Number(taxRate) || 0,
       });
 
-      // 2. Actualizar proforma
-      if (estado) {
-        await connection.query(
-          "UPDATE proformas SET estado = ?, monto_total = ?, observaciones = ? WHERE id_proforma = ?",
-          [estado, totalAmount, obsJson, id]
-        );
+      // 2. Formatear fecha limpia si fue proporcionada
+      let cleanDate: string | null = null;
+      if (fecha_emision) {
+        cleanDate = typeof fecha_emision === "string" && fecha_emision.includes("T")
+          ? fecha_emision.replace("T", " ").slice(0, 19)
+          : (typeof fecha_emision === "string" && fecha_emision.length === 10 ? `${fecha_emision} 12:00:00` : String(fecha_emision));
+      }
+
+      // 3. Actualizar proforma
+      if (cleanDate) {
+        if (estado) {
+          await connection.query(
+            "UPDATE proformas SET estado = ?, monto_total = ?, observaciones = ?, fecha_emision = ? WHERE id_proforma = ?",
+            [estado, totalAmount, obsJson, cleanDate, id]
+          );
+        } else {
+          await connection.query(
+            "UPDATE proformas SET monto_total = ?, observaciones = ?, fecha_emision = ? WHERE id_proforma = ?",
+            [totalAmount, obsJson, cleanDate, id]
+          );
+        }
+        if (idIngreso) {
+          await connection.query(
+            "UPDATE ingresos_taller SET fecha_ingreso = ? WHERE id_ingreso = ?",
+            [cleanDate, idIngreso]
+          );
+        }
       } else {
-        await connection.query(
-          "UPDATE proformas SET monto_total = ?, observaciones = ? WHERE id_proforma = ?",
-          [totalAmount, obsJson, id]
-        );
+        if (estado) {
+          await connection.query(
+            "UPDATE proformas SET estado = ?, monto_total = ?, observaciones = ? WHERE id_proforma = ?",
+            [estado, totalAmount, obsJson, id]
+          );
+        } else {
+          await connection.query(
+            "UPDATE proformas SET monto_total = ?, observaciones = ? WHERE id_proforma = ?",
+            [totalAmount, obsJson, id]
+          );
+        }
       }
 
       // 3. Eliminar detalles antiguos

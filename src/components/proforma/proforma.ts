@@ -2,8 +2,8 @@ export type ServiceLine = {
   id: string;
   code?: string;
   description: string;
-  qty: number;
-  unitPrice: number;
+  qty: number | "";
+  unitPrice: number | "";
   kind: "labor" | "part";
   detalle?: string;
 };
@@ -30,7 +30,7 @@ export type Proforma = {
   complaint: string;
   notes: string;
   lines: ServiceLine[];
-  discount: number;
+  discount: number | "";
   taxRate: number;
 };
 
@@ -94,8 +94,11 @@ export const currency = (n: number) =>
   }).format(n);
 
 export const totals = (p: Proforma) => {
-  const subtotal = p.lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
-  const discount = (subtotal * p.discount) / 100;
-  const taxable = subtotal - discount;
+  const subtotal = p.lines.reduce(
+    (sum, l) => sum + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0),
+    0,
+  );
+  const discount = Number(p.discount) || 0;
+  const taxable = Math.max(0, subtotal - discount);
   return { subtotal, discount, tax: 0, total: taxable };
 };

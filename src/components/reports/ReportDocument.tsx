@@ -6,26 +6,26 @@ import gwLogo from "@/assets/gw.png";
 import kiaLogo from "@/assets/kia.png";
 
 export interface TechnicalReport {
-  id_informe?: number;
-  id_vehiculo?: number;
-  id_cliente?: number;
-  id_ingreso?: number | null;
-  id_empleado?: number | null;
+  id_informe?: number | undefined;
+  id_vehiculo?: number | undefined;
+  id_cliente?: number | undefined;
+  id_ingreso?: number | null | undefined;
+  id_empleado?: number | null | undefined;
   numero_informe: string;
   fecha: string;
-  ciudad?: string;
+  ciudad?: string | undefined;
   destinatario_nombre: string;
-  destinatario_atencion?: string | null;
+  destinatario_atencion?: string | null | undefined;
   vehiculo_descripcion: string;
-  placa: string;
-  kilometraje?: number | null;
+  placa?: string | null | undefined;
+  kilometraje?: number | null | undefined;
   referencia: string;
   contenido: string;
-  conclusion?: string | null;
-  costo_estimado?: number | null;
-  firmante_nombre?: string;
-  firmante_cargo?: string;
-  estado?: string;
+  conclusion?: string | null | undefined;
+  costo_estimado?: number | null | undefined;
+  firmante_nombre?: string | undefined;
+  firmante_cargo?: string | undefined;
+  estado?: string | undefined;
 }
 
 const CAR_BRANDS = [
@@ -127,11 +127,24 @@ function formatReportDate(dateString?: string, city = "Santa Cruz"): string {
   return `${city}, ${day} de ${monthName} de ${year}`;
 }
 
+export function formatReportNumber(num?: string | null): string {
+  if (!num) return "";
+  const matchWithYear = num.match(/^(INF|CAR)-\d{4}-(\d+)$/i);
+  if (matchWithYear && matchWithYear[1] && matchWithYear[2]) {
+    return `${matchWithYear[1].toUpperCase()}-${matchWithYear[2].padStart(4, "0")}`;
+  }
+  const matchSimple = num.match(/^(INF|CAR)-(\d+)$/i);
+  if (matchSimple && matchSimple[1] && matchSimple[2]) {
+    return `${matchSimple[1].toUpperCase()}-${matchSimple[2].padStart(4, "0")}`;
+  }
+  return num;
+}
+
 export function ReportDocument({ report }: { report: TechnicalReport }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [height, setHeight] = useState(1056);
+  const [height, setHeight] = useState(1032);
 
   const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
 
@@ -147,7 +160,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
         containerWidth < targetWidth ? containerWidth / targetWidth : 1;
       setScale(currentScale);
 
-      const docHeight = inner.offsetHeight || 1056;
+      const docHeight = inner.offsetHeight || 1032;
       setHeight(docHeight * currentScale);
     };
 
@@ -182,7 +195,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
           top: 0,
         }}
       >
-        <div className="report-table-wrapper overflow-hidden rounded-xl bg-paper text-paper-foreground shadow-paper relative flex print:overflow-visible print:rounded-none w-[816px] min-h-[1056px] mx-auto flex-row print:w-[8.5in] print:min-h-[11.0in]">
+        <div className="report-table-wrapper overflow-hidden rounded-xl bg-white text-paper-foreground relative flex print:overflow-visible print:rounded-none w-[816px] min-h-[1032px] mx-auto flex-row print:w-[8.5in] print:min-h-[10.75in] print:bg-white print:shadow-none print:m-0 print:mx-auto print:mt-0">
           {/* Estilos para impresión y visualización */}
           <style
             dangerouslySetInnerHTML={{
@@ -192,7 +205,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 1056px !important;
+            min-height: 1032px !important;
             width: 100% !important;
           }
           .report-thead, .report-tbody, .report-tfoot {
@@ -220,8 +233,11 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
+            background-color: #ffffff !important;
             overflow: visible !important;
             height: auto !important;
+            min-height: 0 !important;
+            display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -229,20 +245,26 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
             display: flex !important;
             flex-direction: row !important;
             width: 8.5in !important;
-            min-height: 11.0in !important;
+            min-height: 10.75in !important;
             margin: 0 auto !important;
+            margin-top: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
             background: #ffffff !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
           }
           .report-table {
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 11.0in !important;
+            min-height: 10.75in !important;
             height: 100% !important;
             width: calc(100% - 3rem) !important;
             flex: 1 1 0% !important;
+            margin-top: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .report-thead, .report-tbody, .report-tfoot {
             display: block !important;
@@ -263,11 +285,11 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
             display: flex !important;
             flex-direction: column !important;
             width: 3rem !important;
-            min-height: 11.0in !important;
+            min-height: 10.75in !important;
             background-color: #ffffff !important;
             border-left: 1px solid #f1f5f9 !important;
-            padding-top: 0.75rem !important;
-            padding-bottom: 0.75rem !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
             align-items: center !important;
             justify-content: space-between !important;
             -webkit-print-color-adjust: exact !important;
@@ -382,7 +404,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
                           Informe Técnico
                         </p>
                         <p className="font-mono text-sm font-bold text-slate-900 tracking-wider">
-                          {report.numero_informe || "INF-2026-001"}
+                          {formatReportNumber(report.numero_informe) || "INF-0001"}
                         </p>
                       </div>
                     )}
@@ -436,7 +458,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
                         Placa:
                       </span>
                       <span className="font-mono font-bold text-slate-900">
-                        {report.placa || "s/p"}
+                        {report.placa?.trim() ? report.placa.trim().toUpperCase() : "S/P"}
                       </span>
                       {report.kilometraje ? (
                         <span className="ml-6 text-xs text-slate-600 font-normal">
@@ -501,9 +523,9 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
             {/* Pie de página oficial de especialidades */}
             <tfoot className="report-tfoot">
               <tr className="report-tr">
-                <td className="report-td px-8 py-3 border-none">
+                <td className="report-td px-8 py-2.5 print:py-1.5 border-none">
                   <div
-                    className="border-t border-slate-300 pt-2 text-center text-[8.5px] leading-tight text-slate-600 font-medium uppercase tracking-wide flex flex-col items-center justify-center gap-1"
+                    className="border-t border-slate-300 pt-1.5 text-center text-[8.5px] print:text-[8px] leading-tight text-slate-600 font-medium uppercase tracking-wide flex flex-col items-center justify-center gap-0.5"
                     style={{
                       WebkitPrintColorAdjust: "exact",
                       printColorAdjust: "exact",
@@ -526,7 +548,7 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
 
           {/* Columna Derecha: Logos de Marcas */}
           <div
-            className="report-brand-column w-12 bg-white flex flex-col items-center justify-between border-l border-slate-100 py-3 select-none shrink-0"
+            className="report-brand-column w-12 bg-white flex flex-col items-center justify-between border-l border-slate-100 py-3 print:py-2 select-none shrink-0"
             style={{
               WebkitPrintColorAdjust: "exact",
               printColorAdjust: "exact",

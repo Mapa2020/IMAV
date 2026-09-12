@@ -4,7 +4,7 @@ import { ArrowLeft, Printer, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import { ReportDocument, type TechnicalReport } from "@/components/reports/ReportDocument";
+import { ReportDocument, formatReportNumber, type TechnicalReport } from "@/components/reports/ReportDocument";
 import { useAuth, API_URL } from "@/hooks/useAuth";
 import logo from "@/assets/imav-logo.png";
 
@@ -53,7 +53,7 @@ function ReportView() {
   useEffect(() => {
     if (report) {
       const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
-      document.title = `${isLetter ? "Carta" : "Informe"} ${report.numero_informe} - IMAV Motors`;
+      document.title = `${isLetter ? "Carta" : "Informe"} ${formatReportNumber(report.numero_informe)} - IMAV Motors`;
     }
     return () => {
       document.title = "IMAV Motors S.R.L.";
@@ -95,7 +95,7 @@ function ReportView() {
   const isLetter = report.numero_informe?.toUpperCase().startsWith("CAR");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background print:min-h-0 print:h-auto print:m-0 print:p-0 print:bg-white print:block">
       <Toaster position="top-center" />
 
       {/* Top Navbar */}
@@ -114,7 +114,7 @@ function ReportView() {
             <div className="flex items-center gap-2">
               <img src={logo} alt="IMAV" className="size-6 object-contain" />
               <span className="font-semibold text-sm">
-                {isLetter ? "Carta" : "Informe"}: {report.numero_informe}
+                {isLetter ? "Carta" : "Informe"}: {formatReportNumber(report.numero_informe)}
               </span>
             </div>
           </div>
@@ -128,8 +128,8 @@ function ReportView() {
       </header>
 
       {/* Main Document Content */}
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 print:m-0 print:p-0 print:w-full print:max-w-none">
-        <div className="flex justify-center print:block print:w-full">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 print:m-0 print:mt-0 print:p-0 print:w-full print:max-w-none print:block">
+        <div className="flex justify-center print:block print:w-full print:m-0 print:p-0">
           <ReportDocument report={report} />
         </div>
       </main>

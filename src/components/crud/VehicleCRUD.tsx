@@ -123,9 +123,9 @@ export function VehicleCRUD() {
     }
     setEditingVehicle(vehicle);
     setIdCliente(vehicle.id_cliente.toString());
-    setPlaca(vehicle.placa);
-    setMarca(vehicle.marca);
-    setModelo(vehicle.modelo);
+    setPlaca(vehicle.placa || "");
+    setMarca(vehicle.marca || "");
+    setModelo(vehicle.modelo || "");
     setAnio(vehicle.anio?.toString() || "");
     setColor(vehicle.color || "");
     setIsOpen(true);
@@ -137,16 +137,12 @@ export function VehicleCRUD() {
       toast.error("Debe seleccionar un cliente");
       return;
     }
-    if (!placa.trim() || !marca.trim() || !modelo.trim()) {
-      toast.error("La placa, marca y modelo son requeridas");
-      return;
-    }
 
     const bodyData = {
       id_cliente: parseInt(idCliente),
-      placa: placa.trim().toUpperCase(),
-      marca: marca.trim(),
-      modelo: modelo.trim(),
+      placa: placa.trim() ? placa.trim().toUpperCase() : null,
+      marca: marca.trim() || null,
+      modelo: modelo.trim() || null,
       anio: anio.trim() ? parseInt(anio.trim()) : null,
       color: color.trim() || null,
     };
@@ -257,11 +253,11 @@ export function VehicleCRUD() {
               vehicles.map((v) => (
                 <TableRow key={v.id_vehiculo}>
                   <TableCell className="font-mono font-semibold text-xs uppercase tracking-wider bg-surface-2/45 px-2.5 py-1.5 rounded-md inline-block my-2 ml-4 border border-border">
-                    {v.placa}
+                    {v.placa || "SIN PLACA"}
                   </TableCell>
                   <TableCell>{v.nombre_cliente}</TableCell>
-                  <TableCell>{v.marca}</TableCell>
-                  <TableCell>{v.modelo}</TableCell>
+                  <TableCell>{v.marca || "—"}</TableCell>
+                  <TableCell>{v.modelo || "—"}</TableCell>
                   <TableCell>{v.anio || "—"}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button
@@ -320,12 +316,12 @@ export function VehicleCRUD() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="v-placa">Placa</Label>
+              <Label htmlFor="v-placa">Placa (Opcional)</Label>
               <Input
                 id="v-placa"
                 value={placa}
                 onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-                placeholder="3412 ABC"
+                placeholder=""
                 className="font-mono uppercase"
               />
             </div>
@@ -339,12 +335,12 @@ export function VehicleCRUD() {
             />
 
             <div className="space-y-2">
-              <Label htmlFor="v-anio">Año</Label>
+              <Label htmlFor="v-anio">Año (Opcional)</Label>
               <Input
                 id="v-anio"
                 value={anio}
                 onChange={(e) => setAnio(e.target.value)}
-                placeholder="2020"
+                placeholder=""
                 inputMode="numeric"
               />
             </div>

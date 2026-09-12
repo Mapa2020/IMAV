@@ -154,7 +154,7 @@ export function BrandModelCombobox({
       {/* --- COMBOBOX MARCA --- */}
       <div ref={brandContainerRef} className="relative space-y-2">
         <Label className="label-caps flex items-center justify-between text-xs font-bold">
-          <span>Marca</span>
+          <span>Marca (Opcional)</span>
           {brands.length > 0 && (
             <span className="text-[11px] text-muted-foreground font-normal">
               {brands.length} marcas disponibles
@@ -178,7 +178,7 @@ export function BrandModelCombobox({
                 setIsBrandOpen(true);
               }
             }}
-            placeholder="Seleccione o escriba Marca (ej. Toyota)"
+            placeholder="Seleccione o escriba Marca"
             className="pr-8 mt-1 h-10 text-sm sm:text-base font-medium"
           />
           <button
@@ -264,7 +264,7 @@ export function BrandModelCombobox({
       {/* --- COMBOBOX MODELO --- */}
       <div ref={modelContainerRef} className="relative space-y-2">
         <Label className="label-caps flex items-center justify-between text-xs font-bold">
-          <span>Modelo</span>
+          <span>Modelo (Opcional)</span>
           {models.length > 0 && (
             <span className="text-[11px] text-muted-foreground font-normal">
               {models.length} modelos de {brand}
@@ -290,7 +290,7 @@ export function BrandModelCombobox({
             }}
             placeholder={
               brand
-                ? `Modelo de ${brand} (ej. Hilux)`
+                ? `Modelo de ${brand}`
                 : "Seleccione una marca primero..."
             }
             className="pr-8 mt-1 h-10 text-sm sm:text-base font-medium"

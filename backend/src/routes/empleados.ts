@@ -81,19 +81,24 @@ router.post(
   protect,
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const { ci, nombre, paterno, materno, telefono, rol, estado } = req.body;
+    let { ci, nombre, paterno, materno, telefono, rol, estado } = req.body;
 
-    if (!ci || !nombre || !paterno || !rol) {
-      res.status(400).json({ message: "CI, nombre, paterno y rol son requeridos" });
+    if (!nombre || !paterno || !rol) {
+      res.status(400).json({ message: "Nombre, apellido paterno y rol son requeridos" });
       return;
     }
 
     try {
-      // Validar CI único
-      const [existing] = await pool.query("SELECT id_empleado FROM empleados WHERE ci = ?", [ci]);
-      if ((existing as any[]).length > 0) {
-        res.status(400).json({ message: "Ya existe un empleado registrado con este CI" });
-        return;
+      if (!ci || !String(ci).trim()) {
+        ci = `EMP-${Date.now().toString().slice(-6)}-${Math.floor(10 + Math.random() * 90)}`;
+      } else {
+        ci = String(ci).trim();
+        // Validar CI único si fue provisto
+        const [existing] = await pool.query("SELECT id_empleado FROM empleados WHERE ci = ?", [ci]);
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe un empleado registrado con este CI" });
+          return;
+        }
       }
 
       const [result] = await pool.query(
@@ -120,10 +125,10 @@ router.put(
   authorize("ADMINISTRADOR", "USUARIO"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { ci, nombre, paterno, materno, telefono, rol, estado } = req.body;
+    let { ci, nombre, paterno, materno, telefono, rol, estado } = req.body;
 
-    if (!ci || !nombre || !paterno || !rol) {
-      res.status(400).json({ message: "CI, nombre, paterno y rol son requeridos" });
+    if (!nombre || !paterno || !rol) {
+      res.status(400).json({ message: "Nombre, apellido paterno y rol son requeridos" });
       return;
     }
 
@@ -134,8 +139,11 @@ router.put(
         return;
       }
 
+      const existingEmp = (employeeRows as any[])[0];
+      const finalCi = (ci && String(ci).trim()) ? String(ci).trim() : existingEmp.ci;
+
       // Validar CI único excluyendo el actual
-      const [existing] = await pool.query("SELECT id_empleado FROM empleados WHERE ci = ? AND id_empleado != ?", [ci, id]);
+      const [existing] = await pool.query("SELECT id_empleado FROM empleados WHERE ci = ? AND id_empleado != ?", [finalCi, id]);
       if ((existing as any[]).length > 0) {
         res.status(400).json({ message: "Ya existe otro empleado registrado con este CI" });
         return;
@@ -143,7 +151,7 @@ router.put(
 
       await pool.query(
         "UPDATE empleados SET ci = ?, nombre = ?, paterno = ?, materno = ?, telefono = ?, rol = ?, estado = ? WHERE id_empleado = ?",
-        [ci, nombre, paterno, materno || null, telefono || null, rol, estado, id]
+        [finalCi, nombre, paterno, materno || null, telefono || null, rol, estado, id]
       );
 
       const [updatedRow] = await pool.query("SELECT * FROM empleados WHERE id_empleado = ?", [id]);

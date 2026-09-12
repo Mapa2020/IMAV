@@ -9,29 +9,30 @@ const router = Router();
 // @access  Private
 router.get("/next-number", protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const currentYear = new Date().getFullYear();
     const type = ((req.query.type as string) || "informe").toLowerCase();
     const docPrefix = type === "carta" ? "CAR" : "INF";
-    const prefix = `${docPrefix}-${currentYear}-`;
+    const prefix = `${docPrefix}-`;
 
     const [rows] = await pool.query(
-      "SELECT numero_informe FROM informes_tecnicos WHERE numero_informe LIKE ? ORDER BY id_informe DESC LIMIT 1",
+      "SELECT numero_informe FROM informes_tecnicos WHERE numero_informe LIKE ? ORDER BY id_informe DESC",
       [`${prefix}%`]
     );
 
     let nextCorrelative = 1;
     if ((rows as any[]).length > 0) {
-      const lastNumber = (rows as any[])[0].numero_informe;
-      const parts = lastNumber.split("-");
-      if (parts.length === 3) {
-        const parsed = parseInt(parts[2], 10);
-        if (!isNaN(parsed)) {
-          nextCorrelative = parsed + 1;
+      for (const row of (rows as any[])) {
+        const numStr = row.numero_informe || "";
+        const match = numStr.match(/(?:CAR|INF)-(?:(\d{4})-)?(\d+)/i);
+        if (match && match[2]) {
+          const parsed = parseInt(match[2], 10);
+          if (!isNaN(parsed) && parsed >= nextCorrelative) {
+            nextCorrelative = parsed + 1;
+          }
         }
       }
     }
 
-    const nextNumber = `${prefix}${String(nextCorrelative).padStart(3, "0")}`;
+    const nextNumber = `${docPrefix}-${String(nextCorrelative).padStart(4, "0")}`;
     res.json({ nextNumber });
   } catch (error: any) {
     res.status(500).json({ message: "Error al generar correlativo de informe o carta", error: error.message });
@@ -163,9 +164,9 @@ router.post(
       estado = "EMITIDO",
     } = req.body;
 
-    if (!id_vehiculo || !id_cliente || !destinatario_nombre || !placa || !referencia || !contenido) {
+    if (!id_cliente || !destinatario_nombre || !referencia || !contenido) {
       res.status(400).json({
-        message: "Vehículo, cliente, destinatario, placa, referencia y contenido son campos obligatorios",
+        message: "Cliente, destinatario, referencia y contenido son campos obligatorios",
       });
       return;
     }
@@ -173,27 +174,34 @@ router.post(
     try {
       let finalNumber = numero_informe;
       if (!finalNumber) {
-        const currentYear = new Date().getFullYear();
-        const prefix = `INF-${currentYear}-`;
+        const docPrefix = "INF";
+        const prefix = `${docPrefix}-`;
         const [numRows] = await pool.query(
-          "SELECT numero_informe FROM informes_tecnicos WHERE numero_informe LIKE ? ORDER BY id_informe DESC LIMIT 1",
+          "SELECT numero_informe FROM informes_tecnicos WHERE numero_informe LIKE ? ORDER BY id_informe DESC",
           [`${prefix}%`]
         );
         let nextCorrelative = 1;
         if ((numRows as any[]).length > 0) {
-          const lastNumber = (numRows as any[])[0].numero_informe;
-          const parts = lastNumber.split("-");
-          if (parts.length === 3) {
-            const parsed = parseInt(parts[2], 10);
-            if (!isNaN(parsed)) {
-              nextCorrelative = parsed + 1;
+          for (const row of (numRows as any[])) {
+            const numStr = row.numero_informe || "";
+            const match = numStr.match(/(?:CAR|INF)-(?:(\d{4})-)?(\d+)/i);
+            if (match && match[2]) {
+              const parsed = parseInt(match[2], 10);
+              if (!isNaN(parsed) && parsed >= nextCorrelative) {
+                nextCorrelative = parsed + 1;
+              }
             }
           }
         }
-        finalNumber = `${prefix}${String(nextCorrelative).padStart(3, "0")}`;
+        finalNumber = `${docPrefix}-${String(nextCorrelative).padStart(4, "0")}`;
       }
 
-      const reportDate = fecha ? new Date(fecha) : new Date();
+      const cleanDate = fecha
+        ? (typeof fecha === "string" ? fecha.slice(0, 10) : new Date(fecha).toISOString().slice(0, 10))
+        : new Date().toISOString().slice(0, 10);
+
+      const finalPlaca = placa && typeof placa === "string" && placa.trim() !== "" ? placa.trim().toUpperCase() : null;
+      const finalVehiculoDesc = vehiculo_descripcion && typeof vehiculo_descripcion === "string" && vehiculo_descripcion.trim() !== "" ? vehiculo_descripcion.trim() : "—";
 
       const [result] = await pool.query(
         `INSERT INTO informes_tecnicos (
@@ -218,17 +226,17 @@ router.post(
           estado
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          id_vehiculo,
+          id_vehiculo ? parseInt(id_vehiculo, 10) : null,
           id_cliente,
           id_ingreso || null,
           id_empleado || null,
           finalNumber,
-          reportDate,
+          cleanDate,
           ciudad,
           destinatario_nombre.trim(),
           destinatario_atencion ? destinatario_atencion.trim() : null,
-          vehiculo_descripcion.trim(),
-          placa.trim().toUpperCase(),
+          finalVehiculoDesc,
+          finalPlaca,
           kilometraje ? parseInt(kilometraje, 10) : null,
           referencia.trim(),
           contenido.trim(),
@@ -288,9 +296,23 @@ router.put(
         return;
       }
 
+      const cleanDate = fecha
+        ? (typeof fecha === "string" ? fecha.slice(0, 10) : new Date(fecha).toISOString().slice(0, 10))
+        : null;
+
+      const finalPlaca =
+        placa !== undefined
+          ? (placa && typeof placa === "string" && placa.trim() !== "" ? placa.trim().toUpperCase() : null)
+          : (existing as any[])[0].placa;
+
+      const finalIdVehiculo =
+        id_vehiculo !== undefined
+          ? (id_vehiculo ? parseInt(id_vehiculo, 10) : null)
+          : (existing as any[])[0].id_vehiculo;
+
       await pool.query(
         `UPDATE informes_tecnicos SET
-          id_vehiculo = COALESCE(?, id_vehiculo),
+          id_vehiculo = ?,
           id_cliente = COALESCE(?, id_cliente),
           id_ingreso = ?,
           id_empleado = ?,
@@ -300,7 +322,7 @@ router.put(
           destinatario_nombre = COALESCE(?, destinatario_nombre),
           destinatario_atencion = ?,
           vehiculo_descripcion = COALESCE(?, vehiculo_descripcion),
-          placa = COALESCE(?, placa),
+          placa = ?,
           kilometraje = ?,
           referencia = COALESCE(?, referencia),
           contenido = COALESCE(?, contenido),
@@ -311,17 +333,17 @@ router.put(
           estado = COALESCE(?, estado)
         WHERE id_informe = ?`,
         [
-          id_vehiculo,
+          finalIdVehiculo,
           id_cliente,
           id_ingreso || null,
           id_empleado || null,
           numero_informe,
-          fecha ? new Date(fecha) : null,
+          cleanDate,
           ciudad,
           destinatario_nombre ? destinatario_nombre.trim() : null,
           destinatario_atencion ? destinatario_atencion.trim() : null,
           vehiculo_descripcion ? vehiculo_descripcion.trim() : null,
-          placa ? placa.trim().toUpperCase() : null,
+          finalPlaca,
           kilometraje ? parseInt(kilometraje, 10) : null,
           referencia ? referencia.trim() : null,
           contenido ? contenido.trim() : null,

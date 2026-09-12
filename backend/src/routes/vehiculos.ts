@@ -155,17 +155,25 @@ router.post(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { id_cliente, placa, marca, modelo, anio, color } = req.body;
 
-    if (!id_cliente || !placa || !marca || !modelo) {
-      res.status(400).json({ message: "Cliente, placa, marca y modelo son obligatorios" });
+    if (!id_cliente) {
+      res.status(400).json({ message: "El cliente es obligatorio" });
       return;
     }
 
     try {
-      // Verificar si la placa ya está registrada
-      const [existing] = await pool.query("SELECT id_vehiculo FROM vehiculos WHERE placa = ?", [placa]);
-      if ((existing as any[]).length > 0) {
-        res.status(400).json({ message: "Ya existe un vehículo registrado con esta placa" });
-        return;
+      const finalPlaca = placa && typeof placa === "string" && placa.trim() !== "" ? placa.trim().toUpperCase() : null;
+      const finalMarca = marca && typeof marca === "string" && marca.trim() !== "" ? marca.trim() : null;
+      const finalModelo = modelo && typeof modelo === "string" && modelo.trim() !== "" ? modelo.trim() : null;
+      const finalAnio = anio && !isNaN(parseInt(anio)) ? parseInt(anio) : null;
+      const finalColor = color && typeof color === "string" && color.trim() !== "" ? color.trim() : null;
+
+      // Verificar si la placa ya está registrada (solo si se envió placa)
+      if (finalPlaca) {
+        const [existing] = await pool.query("SELECT id_vehiculo FROM vehiculos WHERE placa = ?", [finalPlaca]);
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe un vehículo registrado con esta placa" });
+          return;
+        }
       }
 
       // Verificar que el cliente existe
@@ -179,16 +187,18 @@ router.post(
         "INSERT INTO vehiculos (id_cliente, placa, marca, modelo, anio, color) VALUES (?, ?, ?, ?, ?, ?)",
         [
           id_cliente,
-          placa.toUpperCase(),
-          marca.trim(),
-          modelo.trim(),
-          anio ? parseInt(anio) : null,
-          color || null,
+          finalPlaca,
+          finalMarca,
+          finalModelo,
+          finalAnio,
+          finalColor,
         ]
       );
 
-      // Auto-registrar marca y modelo en el catálogo para futuros usos
-      await ensureBrandAndModelExist(marca, modelo);
+      // Auto-registrar marca y modelo en el catálogo si fueron provistos
+      if (finalMarca && finalModelo) {
+        await ensureBrandAndModelExist(finalMarca, finalModelo);
+      }
 
       const newVehicleId = (result as any).insertId;
       const [newVehicle] = await pool.query("SELECT * FROM vehiculos WHERE id_vehiculo = ?", [newVehicleId]);
@@ -211,8 +221,8 @@ router.put(
     const { id } = req.params;
     const { id_cliente, placa, marca, modelo, anio, color } = req.body;
 
-    if (!id_cliente || !placa || !marca || !modelo) {
-      res.status(400).json({ message: "Cliente, placa, marca y modelo son obligatorios" });
+    if (!id_cliente) {
+      res.status(400).json({ message: "El cliente es obligatorio" });
       return;
     }
 
@@ -230,21 +240,41 @@ router.put(
         return;
       }
 
+      const finalPlaca = placa && typeof placa === "string" && placa.trim() !== "" ? placa.trim().toUpperCase() : null;
+      const finalMarca = marca && typeof marca === "string" && marca.trim() !== "" ? marca.trim() : null;
+      const finalModelo = modelo && typeof modelo === "string" && modelo.trim() !== "" ? modelo.trim() : null;
+      const finalAnio = anio && !isNaN(parseInt(anio)) ? parseInt(anio) : null;
+      const finalColor = color && typeof color === "string" && color.trim() !== "" ? color.trim() : null;
+
+      // Si se especificó placa, verificar que no esté duplicada con otro vehículo
+      if (finalPlaca) {
+        const [existing] = await pool.query(
+          "SELECT id_vehiculo FROM vehiculos WHERE placa = ? AND id_vehiculo != ?",
+          [finalPlaca, id]
+        );
+        if ((existing as any[]).length > 0) {
+          res.status(400).json({ message: "Ya existe un vehículo registrado con esta placa" });
+          return;
+        }
+      }
+
       await pool.query(
         "UPDATE vehiculos SET id_cliente = ?, placa = ?, marca = ?, modelo = ?, anio = ?, color = ? WHERE id_vehiculo = ?",
         [
           id_cliente,
-          placa.toUpperCase(),
-          marca.trim(),
-          modelo.trim(),
-          anio ? parseInt(anio) : null,
-          color || null,
+          finalPlaca,
+          finalMarca,
+          finalModelo,
+          finalAnio,
+          finalColor,
           id,
         ]
       );
 
-      // Auto-registrar marca y modelo en el catálogo para futuros usos
-      await ensureBrandAndModelExist(marca, modelo);
+      // Auto-registrar marca y modelo en el catálogo si fueron provistos
+      if (finalMarca && finalModelo) {
+        await ensureBrandAndModelExist(finalMarca, finalModelo);
+      }
 
       const [updatedVehicle] = await pool.query("SELECT * FROM vehiculos WHERE id_vehiculo = ?", [id]);
       res.json((updatedVehicle as any[])[0]);

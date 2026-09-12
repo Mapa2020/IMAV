@@ -40,8 +40,7 @@ CREATE TABLE `clientes` (
   PRIMARY KEY (`id_cliente`),
   UNIQUE KEY `uq_nit` (`nit`),
   UNIQUE KEY `uq_ci` (`ci`),
-  UNIQUE KEY `uq_pasaporte` (`pasaporte`),
-  CONSTRAINT `chk_datos_por_tipo` CHECK ((((`tipo_cliente` = _utf8mb4'NIT') and (`nit` is not null)) or ((`tipo_cliente` = _utf8mb4'CI') and (`ci` is not null)) or ((`tipo_cliente` = _utf8mb4'EXTRANJERO') and (`pasaporte` is not null) and (`pais_origen` is not null))))
+  UNIQUE KEY `uq_pasaporte` (`pasaporte`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Empleados
@@ -131,9 +130,9 @@ CREATE TABLE `modelos_vehiculo` (
 CREATE TABLE `vehiculos` (
   `id_vehiculo` int NOT NULL AUTO_INCREMENT,
   `id_cliente` int NOT NULL,
-  `placa` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `marca` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `modelo` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `placa` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `marca` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `modelo` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `anio` int DEFAULT NULL,
   `color` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `vin` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -147,14 +146,14 @@ CREATE TABLE `vehiculos` (
 CREATE TABLE `ingresos_taller` (
   `id_ingreso` int NOT NULL AUTO_INCREMENT,
   `id_vehiculo` int NOT NULL,
-  `id_empleado_receptor` int NOT NULL,
-  `id_mecanico_asignado` int NOT NULL,
+  `id_empleado_receptor` int DEFAULT NULL,
+  `id_mecanico_asignado` int DEFAULT NULL,
   `fecha_ingreso` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `kilometraje` int NOT NULL,
   `nivel_combustible` enum('VACIO','1/4','1/2','3/4','LLENO') COLLATE utf8mb4_unicode_ci NOT NULL,
   `observaciones_estado` text COLLATE utf8mb4_unicode_ci,
   `deja_accesorios` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `falla_reportada` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `falla_reportada` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `estado_ingreso` enum('EN_REVISION','EN_TRABAJO','TERMINADO','ENTREGADO') COLLATE utf8mb4_unicode_ci DEFAULT 'EN_REVISION',
   `fecha_salida` datetime DEFAULT NULL,
   PRIMARY KEY (`id_ingreso`),
@@ -201,7 +200,7 @@ CREATE TABLE `detalles_proforma` (
 -- Informes Técnicos
 CREATE TABLE `informes_tecnicos` (
   `id_informe` int NOT NULL AUTO_INCREMENT,
-  `id_vehiculo` int NOT NULL,
+  `id_vehiculo` int DEFAULT NULL,
   `id_cliente` int NOT NULL,
   `id_ingreso` int DEFAULT NULL,
   `id_empleado` int DEFAULT NULL,
@@ -211,7 +210,7 @@ CREATE TABLE `informes_tecnicos` (
   `destinatario_nombre` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `destinatario_atencion` varchar(150) DEFAULT NULL,
   `vehiculo_descripcion` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `placa` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `placa` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `kilometraje` int DEFAULT NULL,
   `referencia` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `contenido` text COLLATE utf8mb4_unicode_ci NOT NULL,

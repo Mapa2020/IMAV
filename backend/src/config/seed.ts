@@ -109,6 +109,14 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo ejecutar ALTER TABLE para clientes.nombre:", alterErr);
     }
 
+    // Permitir registrar clientes sin documento de identidad (CI/NIT/Pasaporte opcionales)
+    try {
+      await connection.query("ALTER TABLE clientes DROP CHECK chk_datos_por_tipo");
+      console.log("Restricción chk_datos_por_tipo eliminada de clientes.");
+    } catch (chkErr: any) {
+      // Ignorar si la restricción ya no existe
+    }
+
     // Asegurar que la tabla proformas tenga la columna numero_proforma para el reinicio anual
     try {
       const [columns] = await connection.query("SHOW COLUMNS FROM proformas LIKE 'numero_proforma'");
@@ -119,6 +127,43 @@ export async function dbInitAndSeed() {
       }
     } catch (err: any) {
       console.warn("No se pudo verificar o agregar numero_proforma a la tabla proformas:", err.message);
+    }
+
+    // Asegurar que en vehiculos las columnas placa, marca y modelo permitan NULL (para montacargas, maquinaria, etc.)
+    try {
+      await connection.query("ALTER TABLE vehiculos MODIFY COLUMN placa VARCHAR(15) NULL");
+      await connection.query("ALTER TABLE vehiculos MODIFY COLUMN marca VARCHAR(50) NULL");
+      await connection.query("ALTER TABLE vehiculos MODIFY COLUMN modelo VARCHAR(50) NULL");
+      console.log("Columnas placa, marca y modelo de vehiculos verificadas para permitir valores nulos.");
+    } catch (vehErr: any) {
+      console.warn("No se pudo ejecutar ALTER TABLE para vehiculos:", vehErr.message);
+    }
+
+    // Asegurar que en ingresos_taller las columnas permitan NULL
+    try {
+      await connection.query("ALTER TABLE ingresos_taller MODIFY COLUMN falla_reportada TEXT NULL");
+      await connection.query("ALTER TABLE ingresos_taller MODIFY COLUMN id_empleado_receptor INT NULL");
+      await connection.query("ALTER TABLE ingresos_taller MODIFY COLUMN id_mecanico_asignado INT NULL");
+      console.log("Columnas de ingresos_taller (falla_reportada, receptor, mecanico) verificadas para permitir valores nulos.");
+    } catch (ingErr: any) {
+      console.warn("No se pudo ejecutar ALTER TABLE para ingresos_taller:", ingErr.message);
+    }
+
+    // Asegurar que en empleados la columna ci permita NULL
+    try {
+      await connection.query("ALTER TABLE empleados MODIFY COLUMN ci VARCHAR(20) NULL");
+      console.log("Columna ci de empleados verificada para permitir valores nulos.");
+    } catch (empErr: any) {
+      console.warn("No se pudo ejecutar ALTER TABLE para empleados.ci:", empErr.message);
+    }
+
+    // Asegurar que en informes_tecnicos las columnas placa e id_vehiculo permitan NULL (para montacargas, maquinaria sin placa, etc.)
+    try {
+      await connection.query("ALTER TABLE informes_tecnicos MODIFY COLUMN placa VARCHAR(20) NULL");
+      await connection.query("ALTER TABLE informes_tecnicos MODIFY COLUMN id_vehiculo INT NULL");
+      console.log("Columnas placa e id_vehiculo de informes_tecnicos verificadas para permitir valores nulos.");
+    } catch (infErr: any) {
+      console.warn("No se pudo ejecutar ALTER TABLE para informes_tecnicos:", infErr.message);
     }
 
     // Asegurar que la tabla explicaciones_items exista (entidad débil para descripción extendida de items_taller)
@@ -293,7 +338,7 @@ export async function dbInitAndSeed() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS \`informes_tecnicos\` (
           \`id_informe\` int NOT NULL AUTO_INCREMENT,
-          \`id_vehiculo\` int NOT NULL,
+          \`id_vehiculo\` int DEFAULT NULL,
           \`id_cliente\` int NOT NULL,
           \`id_ingreso\` int DEFAULT NULL,
           \`id_empleado\` int DEFAULT NULL,
@@ -303,7 +348,7 @@ export async function dbInitAndSeed() {
           \`destinatario_nombre\` varchar(255) NOT NULL,
           \`destinatario_atencion\` varchar(150) DEFAULT NULL,
           \`vehiculo_descripcion\` varchar(150) NOT NULL,
-          \`placa\` varchar(20) NOT NULL,
+          \`placa\` varchar(20) DEFAULT NULL,
           \`kilometraje\` int DEFAULT NULL,
           \`referencia\` varchar(255) NOT NULL,
           \`contenido\` text NOT NULL,

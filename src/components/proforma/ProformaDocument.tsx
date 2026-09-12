@@ -17,7 +17,7 @@ export function ProformaDocument({
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [height, setHeight] = useState(1056);
+  const [height, setHeight] = useState(1032);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -31,7 +31,7 @@ export function ProformaDocument({
         containerWidth < targetWidth ? containerWidth / targetWidth : 1;
       setScale(currentScale);
 
-      const docHeight = inner.offsetHeight || 1056;
+      const docHeight = inner.offsetHeight || 1032;
       setHeight(docHeight * currentScale);
     };
 
@@ -52,12 +52,12 @@ export function ProformaDocument({
   return (
     <div
       ref={containerRef}
-      className="w-full overflow-hidden relative print:h-auto print:overflow-visible print:static"
+      className="w-full overflow-hidden relative print:h-auto print:overflow-visible print:static print:m-0 print:p-0 print:bg-white print:block"
       style={{ height: scale < 1 ? `${height}px` : "auto" }}
     >
       <div
         ref={innerRef}
-        className="print:!transform-none print:!static print:!w-auto print:!h-auto print:!overflow-visible origin-top-left flex flex-col justify-start"
+        className="print:!transform-none print:!static print:!w-auto print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 origin-top-left flex flex-col justify-start print:block"
         style={{
           transform: scale < 1 ? `scale(${scale})` : "none",
           width: scale < 1 ? "816px" : "100%",
@@ -66,7 +66,7 @@ export function ProformaDocument({
           top: 0,
         }}
       >
-        <div className="overflow-hidden rounded-xl bg-paper text-paper-foreground shadow-paper relative flex print:grid print:grid-cols-[1fr_3rem] print:overflow-visible print:rounded-none md:w-[8.5in] md:min-h-[11.0in] mx-auto flex-row w-full print:w-[8.5in] print:h-[11.0in] print:min-h-[11.0in]">
+        <div className="proforma-wrapper overflow-hidden rounded-xl bg-white text-paper-foreground shadow-paper relative flex print:grid print:grid-cols-[1fr_3rem] print:overflow-visible print:rounded-none md:w-[8.5in] md:min-h-[10.75in] mx-auto flex-row w-full print:w-[8.5in] print:h-[10.75in] print:min-h-[10.75in] print:shadow-none print:m-0 print:mx-auto print:mt-0 print:bg-white">
           {/* Estilos para impresión y visualización */}
           <style
             dangerouslySetInnerHTML={{
@@ -76,7 +76,7 @@ export function ProformaDocument({
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 11.0in !important;
+            min-height: 10.75in !important;
             width: 100% !important;
           }
           .proforma-thead, .proforma-tbody, .proforma-tfoot {
@@ -97,25 +97,50 @@ export function ProformaDocument({
         }
         @media print {
           @page {
-            size: letter;
+            size: letter portrait;
             margin: 0;
           }
-          body {
+          html, body {
             margin: 0 !important;
             padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+          .proforma-wrapper {
+            margin: 0 auto !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
+            width: 8.5in !important;
+            height: 10.75in !important;
+            min-height: 10.75in !important;
+            position: static !important;
+            top: 0 !important;
           }
           .proforma-table {
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             height: 100% !important;
+            min-height: 10.75in !important;
             width: 100% !important;
+            margin-top: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .proforma-thead, .proforma-tbody, .proforma-tfoot {
             display: block !important;
             width: 100% !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
           .proforma-tbody {
             flex-grow: 1 !important;
@@ -128,11 +153,11 @@ export function ProformaDocument({
             display: block !important;
             width: 100% !important;
           }
-          tr {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
+          .proforma-brand-column {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
-          .avoid-break {
+          tr, .avoid-break {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
@@ -267,11 +292,11 @@ export function ProformaDocument({
                     <div className="flex gap-8">
                       {data.clientPhone && (
                         <div className="text-right sm:text-left">
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
+                          <p className="text-[10px] sm:text-[11px] print:text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-0.5">
                             Teléfono
                           </p>
-                          <p className="text-sm sm:text-base font-mono font-semibold text-paper-foreground">
-                            {data.clientPhone}
+                          <p className="text-xs sm:text-[13px] print:text-[11px] font-mono font-medium text-paper-foreground">
+                            {data.clientPhone || "—"}
                           </p>
                         </div>
                       )}
@@ -281,7 +306,7 @@ export function ProformaDocument({
                             CI / NIT
                           </p>
                           <p className="text-sm sm:text-base font-mono font-semibold text-paper-foreground">
-                            {data.clientDoc}
+                            {data.clientDoc || "—"}
                           </p>
                         </div>
                       )}
@@ -295,7 +320,7 @@ export function ProformaDocument({
                         Placa
                       </p>
                       <p className="text-base sm:text-lg font-mono font-bold text-paper-foreground">
-                        {data.plate.toUpperCase() || "—"}
+                        {(data.plate || "").toUpperCase() || "—"}
                       </p>
                     </div>
                     <div>
@@ -364,7 +389,7 @@ export function ProformaDocument({
                               </div>
                               {l.detalle && l.detalle.trim().length > 0 && (
                                 <div className="mt-0.5 ml-2 pl-2 border-l-2 border-slate-350 text-[10px] sm:text-[11px] print:text-[9px] text-paper-foreground italic">
-                                  ↳ {l.detalle}
+                                  {l.detalle.replace(/^[↳↵\r\n\s]+/, "").trim()}
                                 </div>
                               )}
                             </td>
@@ -372,10 +397,10 @@ export function ProformaDocument({
                               {l.qty}
                             </td>
                             <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">
-                              {currency(l.unitPrice)}
+                              {currency(Number(l.unitPrice) || 0)}
                             </td>
                             <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px] font-medium">
-                              {currency(l.qty * l.unitPrice)}
+                              {currency((Number(l.qty) || 0) * (Number(l.unitPrice) || 0))}
                             </td>
                           </tr>
                         ))}
@@ -393,9 +418,9 @@ export function ProformaDocument({
                     {/* Totales (a la derecha) */}
                     <dl className="w-full max-w-[16rem] space-y-1.5 text-sm">
                       <Total k="Subtotal" v={currency(t.subtotal)} />
-                      {data.discount > 0 && (
+                      {Number(data.discount) > 0 && (
                         <Total
-                          k={`Descuento (${data.discount}%)`}
+                          k="Descuento (Bs.)"
                           v={`- ${currency(t.discount)}`}
                         />
                       )}
@@ -417,23 +442,25 @@ export function ProformaDocument({
               <tr className="proforma-tr">
                 <td className="proforma-td p-0 border-none">
                   {/* Observaciones (si las hay) */}
-                  {data.complaint && (
-                    <div className="mx-8 mt-4 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 print:py-1.5 avoid-break">
+                  {(data.complaint || data.notes) && (
+                    <div className="mx-8 mt-3 py-1 print:py-0.5 avoid-break">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Observaciones
                       </p>
-                      <p className="mt-0.5 text-xs sm:text-sm leading-relaxed">
-                        {data.complaint}
+                      <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-paper-foreground">
+                        {data.complaint && data.notes && data.complaint !== data.notes
+                          ? `${data.complaint} — ${data.notes}`
+                          : data.complaint || data.notes}
                       </p>
                     </div>
                   )}
 
                   {/* Pie de página con especialidades */}
                   <div
-                    className={`border-t border-slate-300 px-7 py-6 text-center avoid-break ${data.complaint ? "mt-3" : "mt-8"
+                    className={`border-t border-slate-300 px-7 py-3 print:py-1.5 print:pb-2 text-center avoid-break ${(data.complaint || data.notes) ? "mt-2 print:mt-1" : "mt-4 print:mt-1.5"
                       }`}
                   >
-                    <p className="text-[8.5px] sm:text-[9.5px] print:text-[8.5px] leading-normal text-slate-600 max-w-4xl mx-auto font-medium tracking-tight">
+                    <p className="text-[8.5px] sm:text-[9.5px] print:text-[8px] leading-tight text-slate-600 max-w-4xl mx-auto font-medium tracking-tight">
                       Mecánica General - Mantenimiento Preventivo y Correctivo -
                       Diagnóstico Computarizado - Inyección Electrónica -
                       Electricidad Automotriz
@@ -449,7 +476,7 @@ export function ProformaDocument({
           </table>
 
           {/* Lado Derecho: Columna vertical de logos de marcas de autos */}
-          <div className="w-12 border-l border-slate-300 bg-paper flex flex-col items-center justify-between py-6 px-1.5 shrink-0 print:flex">
+          <div className="proforma-brand-column w-12 border-l border-slate-300 bg-white print:bg-white flex flex-col items-center justify-between py-6 print:py-2.5 px-1.5 shrink-0 print:flex">
             {CAR_BRANDS.map((b) => (
               <img
                 key={b.name}
