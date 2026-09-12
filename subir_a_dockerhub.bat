@@ -14,6 +14,17 @@ echo.
 echo Usando usuario: %DOCKER_USER%
 echo.
 
+:: 0. Comprobar estado de Docker Desktop
+echo [1/4] Verificando Docker Desktop y estado del motor...
+docker info >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ADVERTENCIA] El motor de Docker Desktop no responde.
+    echo Asegúrate de tener Docker Desktop iniciado.
+    echo Si Docker Desktop muestra un error de WSL/Hyper-V,
+    echo verifica que la Virtualización (Intel VT-x o AMD-V) esté HABILITADA en la BIOS de tu PC.
+    echo.
+)
+
 :: 1. Iniciar sesión en Docker
 echo [1/4] Comprobando inicio de sesión en Docker Hub...
 docker login
