@@ -395,7 +395,7 @@ export function ReceptionCRUD() {
                 id="r-falla"
                 value={falla}
                 onChange={(e) => setFalla(e.target.value)}
-                placeholder="Detalle de fallas"
+                placeholder=""
                 rows={2}
               />
             </div>
@@ -406,7 +406,7 @@ export function ReceptionCRUD() {
                 id="r-obs"
                 value={obsEstado}
                 onChange={(e) => setObsEstado(e.target.value)}
-                placeholder="Detalles sobre rayones, golpes, accesorios faltantes..."
+                placeholder=""
                 rows={2}
               />
             </div>

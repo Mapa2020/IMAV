@@ -129,6 +129,14 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo verificar o agregar numero_proforma a la tabla proformas:", err.message);
     }
 
+    // Asegurar que en detalles_proforma la columna cantidad permita decimales (por ej. 2.5 litros de aceite)
+    try {
+      await connection.query("ALTER TABLE detalles_proforma MODIFY COLUMN cantidad DECIMAL(10,2) NOT NULL");
+      console.log("Columna cantidad de detalles_proforma verificada para permitir decimales (DECIMAL(10,2)).");
+    } catch (dpErr: any) {
+      console.warn("No se pudo ejecutar ALTER TABLE para detalles_proforma.cantidad:", dpErr.message);
+    }
+
     // Asegurar que en vehiculos las columnas placa, marca y modelo permitan NULL (para montacargas, maquinaria, etc.)
     try {
       await connection.query("ALTER TABLE vehiculos MODIFY COLUMN placa VARCHAR(15) NULL");

@@ -394,7 +394,9 @@ export function ProformaDocument({
                               )}
                             </td>
                             <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">
-                              {l.qty}
+                              {l.qty !== "" && l.qty !== null && l.qty !== undefined
+                                ? Number(l.qty)
+                                : ""}
                             </td>
                             <td className="py-1.5 print:py-1 text-right font-mono text-[11px] sm:text-xs print:text-[10px]">
                               {currency(Number(l.unitPrice) || 0)}

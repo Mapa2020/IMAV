@@ -198,7 +198,7 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
       id: d.id_detalle.toString(),
       description: d.descripcion,
       code: d.codigo,
-      qty: d.cantidad,
+      qty: Number(d.cantidad),
       unitPrice: Number(d.precio_unitario),
       kind: d.tipo_item === "SERVICIO" ? "labor" : "part",
       detalle: d.detalle || "",

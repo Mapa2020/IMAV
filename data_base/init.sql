@@ -185,7 +185,7 @@ CREATE TABLE `detalles_proforma` (
   `id_detalle` int NOT NULL AUTO_INCREMENT,
   `id_proforma` int NOT NULL,
   `id_item` int NOT NULL,
-  `cantidad` int NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) GENERATED ALWAYS AS ((`cantidad` * `precio_unitario`)) STORED,
   PRIMARY KEY (`id_detalle`),

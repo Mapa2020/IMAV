@@ -367,13 +367,7 @@ export function ClientCRUD() {
                 id="c-doc"
                 value={docVal}
                 onChange={(e) => setDocVal(e.target.value)}
-                placeholder={
-                  tipo === "CI"
-                    ? "1234567 SC (Opcional)"
-                    : tipo === "NIT"
-                      ? "1029384756 (Opcional)"
-                      : "PE987654 (Opcional)"
-                }
+                placeholder=""
               />
             </div>
 

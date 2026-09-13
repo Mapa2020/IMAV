@@ -770,7 +770,7 @@ function Index() {
                         <Input
                           value={data.clientName}
                           onChange={(e) => set("clientName", e.target.value)}
-                          placeholder="Juan Pérez Rocha"
+                          placeholder=""
                           className="mt-2 h-10 text-sm sm:text-base font-medium"
                         />
                       </div>
@@ -834,13 +834,7 @@ function Index() {
                           <Input
                             value={data.clientDoc}
                             onChange={(e) => set("clientDoc", e.target.value)}
-                            placeholder={
-                              docType === "CI"
-                                ? "1234567 SC (Opcional)"
-                                : docType === "NIT"
-                                  ? "1029384756 (Opcional)"
-                                  : "PE987654 (Opcional)"
-                            }
+                            placeholder=""
                             className="mt-2 font-mono h-10 text-sm sm:text-base font-medium"
                           />
                         </div>
@@ -1094,7 +1088,7 @@ function Index() {
                         <Textarea
                           value={data.complaint}
                           onChange={(e) => set("complaint", e.target.value)}
-                          placeholder="Ruido metálico en suspensión delantera al pasar badenes."
+                          placeholder=""
                           rows={3}
                           className="mt-2 text-sm sm:text-base"
                         />
@@ -1107,7 +1101,7 @@ function Index() {
                         <Textarea
                           value={data.notes}
                           onChange={(e) => set("notes", e.target.value)}
-                          placeholder="Rayón leve en puerta trasera derecha."
+                          placeholder=""
                           rows={2}
                           className="mt-2 text-sm sm:text-base"
                         />
@@ -1191,6 +1185,7 @@ function Index() {
                             />
                             <Input
                               type="number"
+                              step="any"
                               value={l.qty === 0 || l.qty === "" ? "" : l.qty}
                               placeholder=""
                               onChange={(e) => {
@@ -1203,6 +1198,7 @@ function Index() {
                             />
                             <Input
                               type="number"
+                              step="any"
                               value={
                                 l.unitPrice === 0 || l.unitPrice === ""
                                   ? ""

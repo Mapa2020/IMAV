@@ -464,6 +464,7 @@ export function ProformaCRUD() {
                       />
                       <Input
                         type="number"
+                        step="any"
                         value={l.qty === 0 || l.qty === "" ? "" : l.qty}
                         placeholder=""
                         onChange={(e) => {
@@ -476,6 +477,7 @@ export function ProformaCRUD() {
                       />
                       <Input
                         type="number"
+                        step="any"
                         value={
                           l.unitPrice === 0 || l.unitPrice === ""
                             ? ""
