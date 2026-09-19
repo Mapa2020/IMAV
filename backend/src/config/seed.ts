@@ -174,21 +174,62 @@ export async function dbInitAndSeed() {
       console.warn("No se pudo ejecutar ALTER TABLE para informes_tecnicos:", infErr.message);
     }
 
-    // Asegurar que la tabla explicaciones_items exista (entidad débil para descripción extendida de items_taller)
+    // Asegurar que la tabla explicaciones_items exista y esté migrada correctamente a detalles_proforma
     try {
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS \`explicaciones_items\` (
-          \`id_explicacion\` int NOT NULL AUTO_INCREMENT,
-          \`id_item\` int NOT NULL,
-          \`descripcion_detallada\` text COLLATE utf8mb4_unicode_ci NOT NULL,
-          PRIMARY KEY (\`id_explicacion\`),
-          UNIQUE KEY \`uq_item_explicacion\` (\`id_item\`),
-          CONSTRAINT \`fk_explicacion_item\` FOREIGN KEY (\`id_item\`) REFERENCES \`items_taller\` (\`id_item\`) ON DELETE CASCADE ON UPDATE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-      `);
-      console.log("Tabla 'explicaciones_items' verificada/creada con éxito.");
+      const [tableCheck] = await connection.query("SHOW TABLES LIKE 'explicaciones_items'");
+      if ((tableCheck as any[]).length === 0) {
+        await connection.query(`
+          CREATE TABLE \`explicaciones_items\` (
+            \`id_explicacion\` int NOT NULL AUTO_INCREMENT,
+            \`id_detalle\` int NOT NULL,
+            \`descripcion_detallada\` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            PRIMARY KEY (\`id_explicacion\`),
+            UNIQUE KEY \`uq_detalle_explicacion\` (\`id_detalle\`),
+            CONSTRAINT \`fk_explicacion_detalle\` FOREIGN KEY (\`id_detalle\`) REFERENCES \`detalles_proforma\` (\`id_detalle\`) ON DELETE CASCADE ON UPDATE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+        console.log("Tabla 'explicaciones_items' creada exitosamente vinculada a 'detalles_proforma'.");
+      } else {
+        const [columns] = await connection.query("SHOW COLUMNS FROM explicaciones_items");
+        const columnNames = (columns as any[]).map((c) => c.Field);
+
+        if (columnNames.includes("id_item") && !columnNames.includes("id_detalle")) {
+          console.log("Detectada estructura anterior en 'explicaciones_items' (con id_item). Iniciando migración segura a id_detalle...");
+
+          // Crear tabla nueva con la estructura correcta
+          await connection.query(`
+            CREATE TABLE IF NOT EXISTS \`explicaciones_items_nueva\` (
+              \`id_explicacion\` int NOT NULL AUTO_INCREMENT,
+              \`id_detalle\` int NOT NULL,
+              \`descripcion_detallada\` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+              PRIMARY KEY (\`id_explicacion\`),
+              UNIQUE KEY \`uq_detalle_explicacion\` (\`id_detalle\`),
+              CONSTRAINT \`fk_explicacion_detalle\` FOREIGN KEY (\`id_detalle\`) REFERENCES \`detalles_proforma\` (\`id_detalle\`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+          `);
+
+          // Migrar datos existentes asociando el id_item con los id_detalle correspondientes en detalles_proforma
+          await connection.query(`
+            INSERT INTO explicaciones_items_nueva (id_detalle, descripcion_detallada)
+            SELECT dp.id_detalle, ei.descripcion_detallada
+            FROM explicaciones_items ei
+            JOIN detalles_proforma dp ON ei.id_item = dp.id_item
+            ON DUPLICATE KEY UPDATE descripcion_detallada = VALUES(descripcion_detallada);
+          `);
+
+          // Desactivar temporalmente revisión de llaves foráneas para intercambiar tablas limpiamente
+          await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+          await connection.query("DROP TABLE explicaciones_items");
+          await connection.query("RENAME TABLE explicaciones_items_nueva TO explicaciones_items");
+          await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+          console.log("Migración de 'explicaciones_items' completada exitosamente sin pérdida de datos.");
+        } else {
+          console.log("Tabla 'explicaciones_items' verificada correctamente con id_detalle.");
+        }
+      }
     } catch (err: any) {
-      console.warn("No se pudo verificar o crear explicaciones_items:", err.message);
+      console.warn("No se pudo verificar o migrar explicaciones_items:", err.message);
     }
 
     // Asegurar tablas de marcas y modelos de vehiculo

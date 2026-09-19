@@ -11,6 +11,8 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 -- 1. ESTRUCTURA DE TABLAS
 -- ------------------------------------------------------
 
+DROP TABLE IF EXISTS `plantillas_documentos`;
+DROP TABLE IF EXISTS `explicaciones_items`;
 DROP TABLE IF EXISTS `detalles_proforma`;
 DROP TABLE IF EXISTS `proformas`;
 DROP TABLE IF EXISTS `informes_tecnicos`;
@@ -18,7 +20,6 @@ DROP TABLE IF EXISTS `ingresos_taller`;
 DROP TABLE IF EXISTS `vehiculos`;
 DROP TABLE IF EXISTS `modelos_vehiculo`;
 DROP TABLE IF EXISTS `marcas_vehiculo`;
-DROP TABLE IF EXISTS `explicaciones_items`;
 DROP TABLE IF EXISTS `repuestos`;
 DROP TABLE IF EXISTS `servicios`;
 DROP TABLE IF EXISTS `items_taller`;
@@ -46,7 +47,7 @@ CREATE TABLE `clientes` (
 -- Empleados
 CREATE TABLE `empleados` (
   `id_empleado` int NOT NULL AUTO_INCREMENT,
-  `ci` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ci` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `paterno` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `materno` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -98,15 +99,6 @@ CREATE TABLE `servicios` (
   CONSTRAINT `servicios_ibfk_1` FOREIGN KEY (`id_item`) REFERENCES `items_taller` (`id_item`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Explicaciones extendidas de items
-CREATE TABLE `explicaciones_items` (
-  `id_explicacion` int NOT NULL AUTO_INCREMENT,
-  `id_item` int NOT NULL,
-  `descripcion_detallada` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`id_explicacion`),
-  UNIQUE KEY `uq_item_explicacion` (`id_item`),
-  CONSTRAINT `fk_explicacion_item` FOREIGN KEY (`id_item`) REFERENCES `items_taller` (`id_item`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Marcas de vehículos
 CREATE TABLE `marcas_vehiculo` (
@@ -197,6 +189,16 @@ CREATE TABLE `detalles_proforma` (
   CONSTRAINT `detalles_proforma_chk_2` CHECK ((`precio_unitario` >= 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Explicaciones extendidas de items en proforma (Entidad Débil de detalles_proforma)
+CREATE TABLE `explicaciones_items` (
+  `id_explicacion` int NOT NULL AUTO_INCREMENT,
+  `id_detalle` int NOT NULL,
+  `descripcion_detallada` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id_explicacion`),
+  UNIQUE KEY `uq_detalle_explicacion` (`id_detalle`),
+  CONSTRAINT `fk_explicacion_detalle` FOREIGN KEY (`id_detalle`) REFERENCES `detalles_proforma` (`id_detalle`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Informes Técnicos
 CREATE TABLE `informes_tecnicos` (
   `id_informe` int NOT NULL AUTO_INCREMENT,
@@ -230,6 +232,19 @@ CREATE TABLE `informes_tecnicos` (
   CONSTRAINT `fk_inf_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id_cliente`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_inf_ingreso` FOREIGN KEY (`id_ingreso`) REFERENCES `ingresos_taller` (`id_ingreso`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_inf_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleados` (`id_empleado`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Plantillas de Documentos (Informes Técnicos y Cartas)
+CREATE TABLE `plantillas_documentos` (
+  `id_plantilla` int NOT NULL AUTO_INCREMENT,
+  `tipo` enum('INFORME','CARTA') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'INFORME',
+  `titulo` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `referencia` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contenido` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `costo_estimado` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_plantilla`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------
@@ -1821,5 +1836,14 @@ UPDATE `servicios` SET `precio_base` = 320.00 WHERE `id_item` = (SELECT `id_item
 UPDATE `servicios` SET `precio_base` = 250.00 WHERE `id_item` = (SELECT `id_item` FROM `items_taller` WHERE `descripcion` LIKE '%ALINEACION%' LIMIT 1);
 UPDATE `servicios` SET `precio_base` = 150.00 WHERE `id_item` = (SELECT `id_item` FROM `items_taller` WHERE `descripcion` LIKE '%SCANNER%' OR `descripcion` LIKE '%ESCANER%' LIMIT 1);
 UPDATE `servicios` SET `precio_base` = 65.00 WHERE `id_item` = (SELECT `id_item` FROM `items_taller` WHERE `descripcion` LIKE '%LAVADO%' LIMIT 1);
+
+-- Plantillas iniciales de informes y cartas
+INSERT INTO `plantillas_documentos` (`tipo`, `titulo`, `referencia`, `contenido`, `costo_estimado`) VALUES
+('INFORME', 'Problema en Caja de Dirección', 'INFORME PROBLEMA CAJA DE DIRECCION HIDRAULICA', 'Informamos que lamentablemente los daños que se originaron internamente en la caja de dirección no tienen arreglo.\n\nDicho repuesto o caja de dirección no se encuentra disponible como pieza nueva estándar.\n\nLa solución recomendada es adaptar una caja de dirección nueva compatible modificando las bases de los conductos de entrada y salida de aceite hidráulico. El trabajo se entregaría debidamente calibrado y garantizado.\n\nSolicitamos su aprobación para proceder con la provisión y el trabajo respectivo.', 7900.00),
+('INFORME', 'Diagnóstico Electrónico e Inyección', 'INFORME DE DIAGNOSTICO COMPUTARIZADO Y SISTEMA DE INYECCION', 'Se procedió con el escaneo computarizado del sistema electrónico de motor (OBD-II), detectando códigos de falla relacionados con la presión de combustible y lectura errática en sensores de oxígeno.\n\nSe realizaron las siguientes pruebas en banco:\n1. Verificación de presión en riel de inyección.\n2. Limpieza ultrasónica y calibración de inyectores.\n3. Comprobación del sensor MAF y cuerpo de aceleración.\n\nSe recomienda el cambio de filtro de combustible y sustitución de sensor defectuoso para restablecer el rendimiento óptimo del motor.', 1450.00),
+('INFORME', 'Sistema de Frenos y Suspensión', 'INFORME TECNICO REVISION DE FRENOS Y TREN DELANTERO', 'En la inspección técnica del sistema de suspensión y frenos se evidenció un desgaste severo en pastillas de freno delanteras y bujes de meseta con holgura excesiva.\n\nTrabajos recomendados para garantizar la seguridad del vehículo:\n- Rectificado de discos de freno y reemplazo de pastillas cerámicas.\n- Cambio de amortiguadores delanteros y bujes de barra estabilizadora.\n- Alineación computarizada y balanceo de neumáticos.', 2200.00),
+('INFORME', 'Mantenimiento Preventivo Integral', 'INFORME DE MANTENIMIENTO PREVENTIVO Y SERVICIO GENERAL', 'Se completó satisfactoriamente el servicio de mantenimiento programado del vehículo, habiendo ejecutado los siguientes puntos de control:\n\n1. Cambio de aceite de motor y filtros (aceite, aire y cabina).\n2. Revisión de niveles de fluidos (frenos, dirección, refrigerante).\n3. Calibración de bujías y revisión del sistema de encendido.\n4. Ajuste de frenos y engrase de crucetas/tren motriz.\n\nEl vehículo se encuentra en óptimas condiciones de funcionamiento.', 950.00),
+('CARTA', 'Solicitud de Aprobación de Trabajos', 'SOLICITUD DE APROBACION DE TRABAJOS MECANICOS', 'Por medio de la presente, nos dirigimos a ustedes con el propósito de poner en su conocimiento los requerimientos técnicos evidenciados durante la inspección preliminar de su motorizado.\n\nHabiéndose evaluado los componentes mecánicos respectivos, solicitamos cordialmente su debida autorización para proceder con los trabajos detallados en la cotización coordinada, con la finalidad de restablecer el óptimo funcionamiento y garantizar la seguridad del vehículo.\n\nQuedamos a su entera disposición ante cualquier consulta al respecto.', NULL),
+('CARTA', 'Notificación de Entrega y Conformidad', 'ENTREGA DE VEHICULO Y CONSTANCIA DE SERVICIO', 'Mediante la presente, hacemos formal constancia de la conclusión de los trabajos y servicios mecánicos efectuados en sus instalaciones en el vehículo de su propiedad.\n\nLas pruebas de ruta y de funcionamiento han arrojado resultados satisfactorios, por lo que el motorizado se encuentra a su disposición para su correspondiente retiro de nuestras instalaciones.\n\nAgradecemos la confianza depositada en nuestro taller y en nuestro equipo técnico.', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -33,3 +33,4 @@ dist-ssr
 
 # Database Backups
 backend/backups/
+backups/

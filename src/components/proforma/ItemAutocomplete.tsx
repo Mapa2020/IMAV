@@ -23,7 +23,6 @@ interface SuggestedItem {
   descripcion: string;
   tipo_item: "SERVICIO" | "REPUESTO";
   precio: number;
-  detalle?: string | null;
 }
 
 export function ItemAutocomplete({
@@ -105,13 +104,13 @@ export function ItemAutocomplete({
       item.codigo,
       Number(item.precio),
       kind,
-      item.detalle || "",
+      "",
     );
     setIsOpen(false);
   };
 
   return (
-    <div ref={containerRef} className={`relative flex-1 ${className || ""}`}>
+    <div ref={containerRef} className={`relative flex-1 min-w-0 ${className || ""}`}>
       <div className="relative flex items-center">
         <Input
           value={value}
@@ -170,17 +169,7 @@ export function ItemAutocomplete({
                           <span className="text-xs text-slate-500 font-mono">
                             Código: {item.codigo}
                           </span>
-                          {item.detalle && (
-                            <span className="text-[10px] bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded border border-sky-200 font-medium">
-                              Tiene detalle
-                            </span>
-                          )}
                         </div>
-                        {item.detalle && (
-                          <p className="text-xs text-slate-600 line-clamp-3 italic mt-1">
-                            {item.detalle.replace(/^[↳↵\r\n\s]+/, "")}
-                          </p>
-                        )}
                       </div>
                       <div className="text-right shrink-0 ml-2">
                         <p className="font-semibold font-mono text-amber-600 text-sm sm:text-base">

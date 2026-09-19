@@ -30,7 +30,6 @@ interface Item {
   tipo_item: "REPUESTO" | "SERVICIO";
   precio: number;
   stock_actual: number | null;
-  detalle?: string | null;
 }
 
 export function ItemCRUD() {
@@ -49,7 +48,6 @@ export function ItemCRUD() {
   const [descripcion, setDescripcion] = useState("");
   const [tipo, setTipo] = useState<"REPUESTO" | "SERVICIO">("SERVICIO");
   const [precio, setPrecio] = useState("");
-  const [detalle, setDetalle] = useState("");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -88,7 +86,6 @@ export function ItemCRUD() {
     setDescripcion("");
     setTipo("SERVICIO");
     setPrecio("");
-    setDetalle("");
     setIsOpen(true);
   };
 
@@ -102,7 +99,6 @@ export function ItemCRUD() {
     setDescripcion(item.descripcion);
     setTipo(item.tipo_item);
     setPrecio(item.precio.toString());
-    setDetalle(item.detalle || "");
     setIsOpen(true);
   };
 
@@ -128,7 +124,6 @@ export function ItemCRUD() {
       tipo_item: tipo,
       precio: Number(precio),
       stock_actual: editingItem ? (editingItem.stock_actual ?? 0) : 0,
-      detalle: detalle.trim() || null,
     };
 
     try {
@@ -253,12 +248,7 @@ export function ItemCRUD() {
                 <TableRow key={item.id_item} className="hover:bg-muted/20">
                   <TableCell className="font-mono text-xs font-semibold">{item.codigo}</TableCell>
                   <TableCell className="font-medium">
-                    <div>{item.descripcion}</div>
-                    {item.detalle && (
-                      <div className="text-[11px] text-foreground/80 italic mt-0.5">
-                        {item.detalle.replace(/^[↳↵\r\n\s]+/, "")}
-                      </div>
-                    )}
+                    {item.descripcion}
                   </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
@@ -359,15 +349,6 @@ export function ItemCRUD() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="detalle">Explicación / Detalle extendido (Opcional)</Label>
-              <Input
-                id="detalle"
-                placeholder="Ej. Incluye cambio de arandela y revisión de niveles"
-                value={detalle}
-                onChange={(e) => setDetalle(e.target.value)}
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="precio">

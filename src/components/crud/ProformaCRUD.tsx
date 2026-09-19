@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { currency } from "../proforma/proforma";
+import { currency, type Proforma as ProformaDocType } from "../proforma/proforma";
+import { ProformaDocument } from "../proforma/ProformaDocument";
 import { ItemAutocomplete } from "../proforma/ItemAutocomplete";
 
 interface Proforma {
@@ -69,6 +70,8 @@ export function ProformaCRUD() {
   // Modal edit state
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingProformaData, setEditingProformaData] = useState<any | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [lines, setLines] = useState<ServiceLine[]>([]);
   const [discount, setDiscount] = useState<number | "">(0);
   const [taxRate, setTaxRate] = useState<number>(13);
@@ -115,16 +118,21 @@ export function ProformaCRUD() {
       const data = await res.json();
 
       setEditingId(prof.id_proforma);
+      setEditingProformaData({ ...prof, ...data });
       setDiscount(data.discount || 0);
       setTaxRate(data.taxRate || 13);
       setObsText(data.observaciones || "");
       const rawDate = data.fecha_emision || prof.fecha_emision;
       setFechaEmision(rawDate ? String(rawDate).slice(0, 10) : new Date().toISOString().slice(0, 10));
 
-      const loadedLines = (data.lines || []).map((l: ServiceLine) => ({
-        ...l,
-        detalle: l.detalle || "",
-      }));
+      const loadedLines = (data.lines || []).map((l: ServiceLine) => {
+        const raw = l.detalle !== null && l.detalle !== undefined ? String(l.detalle).trim() : "";
+        const clean = raw.toLowerCase() !== "null" && raw.toLowerCase() !== "undefined" ? raw : "";
+        return {
+          ...l,
+          detalle: clean,
+        };
+      });
       setLines(loadedLines);
       setIsOpen(true);
     } catch (e) {
@@ -175,12 +183,18 @@ export function ProformaCRUD() {
     }
 
     const bodyData = {
-      lines: lines.map((l) => ({
-        description: l.description,
-        qty: Number(l.qty) || 1,
-        unitPrice: Number(l.unitPrice) || 0,
-        kind: l.kind,
-      })),
+      lines: lines.map((l) => {
+        const raw = l.detalle !== null && l.detalle !== undefined ? String(l.detalle).trim() : "";
+        const clean = raw.toLowerCase() !== "null" && raw.toLowerCase() !== "undefined" ? raw : "";
+        return {
+          code: l.code,
+          description: l.description,
+          qty: Number(l.qty) || 1,
+          unitPrice: Number(l.unitPrice) || 0,
+          kind: l.kind,
+          detalle: clean,
+        };
+      }),
       discount: Number(discount) || 0,
       taxRate: 0,
       observaciones: obsText,
@@ -402,21 +416,23 @@ export function ProformaCRUD() {
               </div>
 
               <div className="space-y-2.5 border border-border p-3.5 rounded-lg bg-surface-2/30">
-                <div className="hidden sm:grid sm:grid-cols-[1fr_85px_120px_135px_44px] gap-3 mb-1 px-1">
-                  <span className="text-xs font-bold label-caps">
-                    Descripción del Ítem / Servicio
-                  </span>
-                  <span className="text-xs font-bold label-caps text-right">
-                    Cant.
-                  </span>
-                  <span className="text-xs font-bold label-caps text-right">
-                    P. Unit.
-                  </span>
-                  <span className="text-xs font-bold label-caps">
-                    Tipo
-                  </span>
-                  <span />
-                </div>
+                {lines.length > 0 && (
+                  <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_58px_105px_115px_38px] gap-2.5 px-[13px] mb-1.5 text-muted-foreground font-semibold items-center">
+                    <span className="text-xs font-bold label-caps truncate">
+                      Descripción del Ítem / Servicio
+                    </span>
+                    <span className="text-xs font-bold label-caps text-center">
+                      Cant.
+                    </span>
+                    <span className="text-xs font-bold label-caps text-right pr-2">
+                      P. Unit.
+                    </span>
+                    <span className="text-xs font-bold label-caps pl-1">
+                      Tipo
+                    </span>
+                    <span />
+                  </div>
+                )}
                 {lines.length === 0 && (
                   <p className="text-center text-sm text-muted-foreground py-6">
                     No hay líneas registradas en esta proforma
@@ -427,7 +443,7 @@ export function ProformaCRUD() {
                     key={l.id}
                     className="p-3 rounded-md border border-border/70 bg-card/50 space-y-2"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_85px_120px_135px_44px] gap-2.5 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_58px_105px_115px_38px] gap-2.5 items-center">
                       <ItemAutocomplete
                         value={l.description}
                         token={token}
@@ -449,12 +465,13 @@ export function ProformaCRUD() {
                               );
                               return;
                             }
+                            const cleanDet = detalle && detalle.trim().toLowerCase() !== "null" ? detalle.trim() : (l.detalle && l.detalle.trim().toLowerCase() !== "null" ? l.detalle.trim() : "");
                             updateLine(l.id, {
                               description: desc,
                               code: code,
                               unitPrice: price > 0 ? price : "",
                               kind: kind,
-                              detalle: detalle || l.detalle || "",
+                              detalle: cleanDet,
                               qty: l.qty && l.qty !== 1 ? l.qty : "",
                             });
                           } else {
@@ -473,7 +490,7 @@ export function ProformaCRUD() {
                             qty: val === "" ? "" : Number(val),
                           });
                         }}
-                        className="text-right px-2 text-sm sm:text-base font-medium h-10"
+                        className="text-center px-1 text-sm sm:text-base font-medium h-10"
                       />
                       <Input
                         type="number"
@@ -498,7 +515,7 @@ export function ProformaCRUD() {
                           updateLine(l.id, { kind: val })
                         }
                       >
-                        <SelectTrigger className="h-10 text-sm">
+                        <SelectTrigger className="h-10 text-xs sm:text-sm px-2.5">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -511,20 +528,20 @@ export function ProformaCRUD() {
                         variant="ghost"
                         size="icon"
                         onClick={() => removeLine(l.id)}
-                        className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-10"
+                        className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-9 sm:w-full flex items-center justify-center"
                         title="Eliminar ítem"
                       >
-                        <Trash2 className="size-5" />
+                        <Trash2 className="size-4 sm:size-5" />
                       </Button>
                     </div>
 
                     {/* Explicación del item */}
-                    <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
-                      <span className="text-xs font-semibold text-foreground/80 shrink-0">
+                    <div className="flex items-center gap-2.5 pt-2 border-t border-border/40">
+                      <span className="label-caps text-xs font-bold text-muted-foreground shrink-0">
                         Explicación:
                       </span>
                       <Input
-                        value={l.detalle || ""}
+                        value={l.detalle && l.detalle.trim().toLowerCase() !== "null" ? l.detalle : ""}
                         onChange={(e) =>
                           updateLine(l.id, { detalle: e.target.value })
                         }
@@ -534,6 +551,18 @@ export function ProformaCRUD() {
                     </div>
                   </div>
                 ))}
+
+                {/* Botón inferior para añadir un nuevo ítem sin tener que subir al inicio */}
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => addLine()}
+                    className="w-full border-dashed border-border/80 hover:border-primary hover:text-primary py-2.5 font-medium transition-colors"
+                  >
+                    <Plus className="size-4 mr-1.5" /> Agregar Ítem al Final
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -564,17 +593,77 @@ export function ProformaCRUD() {
               />
             </div>
 
-            <DialogFooter className="mt-6">
+            <DialogFooter className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpen(false)}
+                onClick={() => setIsPreviewOpen(true)}
+                className="w-full sm:w-auto text-primary hover:text-primary/90 border-primary/30 hover:border-primary"
               >
-                Cancelar
+                <Eye className="size-4 mr-1.5" /> Previsualizar
               </Button>
-              <Button type="submit">Guardar Cambios</Button>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">Guardar Cambios</Button>
+              </div>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Previsualización en Vivo de la Proforma */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-5xl w-[96vw] max-h-[92vh] overflow-y-auto p-2 sm:p-6 bg-slate-900/50 backdrop-blur-sm">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg font-bold">
+              Vista Previa del Documento de Proforma
+            </DialogTitle>
+          </DialogHeader>
+          <div className="border border-border rounded-xl shadow-lg overflow-hidden bg-card mx-auto w-full">
+            {editingProformaData && (
+              <ProformaDocument
+                data={{
+                  clientName: editingProformaData.nombre_cliente || "",
+                  clientPhone: editingProformaData.telefono_cliente || "",
+                  clientDoc:
+                    editingProformaData.ci_cliente ||
+                    editingProformaData.nit_cliente ||
+                    editingProformaData.pasaporte_cliente ||
+                    "",
+                  plate: editingProformaData.placa || "",
+                  brand: editingProformaData.marca || "",
+                  model: editingProformaData.modelo || "",
+                  year: editingProformaData.anio?.toString() || "",
+                  color: editingProformaData.color || "",
+                  mileage: editingProformaData.kilometraje?.toString() || "",
+                  fuel: editingProformaData.nivel_combustible || "Gasolina",
+                  vin: editingProformaData.vin || "",
+                  receivedBy: editingProformaData.nombre_receptor
+                    ? `${editingProformaData.nombre_receptor} ${editingProformaData.paterno_receptor || ""}`.trim()
+                    : "",
+                  entryDate: fechaEmision || "",
+                  entryTime: "",
+                  fuelLevel: editingProformaData.nivel_combustible_porcentaje || 50,
+                  complaint: editingProformaData.falla_reportada || "",
+                  notes: obsText || "",
+                  lines: lines.map((l) => ({
+                    ...l,
+                    qty: Number(l.qty) || 1,
+                    unitPrice: Number(l.unitPrice) || 0,
+                  })),
+                  discount: Number(discount) || 0,
+                  taxRate: Number(taxRate) || 0,
+                }}
+                code={`PF-${String(editingProformaData.numero_proforma || editingProformaData.id_proforma || "").padStart(4, "0")}`}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -10,8 +10,7 @@ async function findOrCreateItem(
   description: string,
   kind: "labor" | "part",
   price: number,
-  code?: string,
-  detalle?: string
+  code?: string
 ): Promise<number> {
   const tipoItem = kind === "labor" ? "SERVICIO" : "REPUESTO";
   let idItem: number | null = null;
@@ -63,14 +62,6 @@ async function findOrCreateItem(
     }
   }
 
-  // Guardar o actualizar la explicación/detalle extendido si se especificó
-  if (idItem && detalle && String(detalle).trim()) {
-    await connection.query(
-      "INSERT INTO explicaciones_items (id_item, descripcion_detallada) VALUES (?, ?) ON DUPLICATE KEY UPDATE descripcion_detallada = VALUES(descripcion_detallada)",
-      [idItem, String(detalle).trim()]
-    );
-  }
-  
   return idItem!;
 }
 
@@ -186,7 +177,7 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
       SELECT dp.*, it.descripcion, it.codigo, it.tipo_item, ei.descripcion_detallada as detalle
       FROM detalles_proforma dp
       JOIN items_taller it ON dp.id_item = it.id_item
-      LEFT JOIN explicaciones_items ei ON it.id_item = ei.id_item
+      LEFT JOIN explicaciones_items ei ON dp.id_detalle = ei.id_detalle
       WHERE dp.id_proforma = ?
       ORDER BY dp.id_detalle ASC
       `,
@@ -194,15 +185,19 @@ router.get("/:id", protect, async (req: AuthenticatedRequest, res: Response): Pr
     );
 
     // Mapear detalles al formato del frontend
-    const lines = (details as any[]).map((d) => ({
-      id: d.id_detalle.toString(),
-      description: d.descripcion,
-      code: d.codigo,
-      qty: Number(d.cantidad),
-      unitPrice: Number(d.precio_unitario),
-      kind: d.tipo_item === "SERVICIO" ? "labor" : "part",
-      detalle: d.detalle || "",
-    }));
+    const lines = (details as any[]).map((d) => {
+      const rawDetalle = d.detalle !== null && d.detalle !== undefined ? String(d.detalle).trim() : "";
+      const cleanDetalle = rawDetalle.toLowerCase() !== "null" && rawDetalle.toLowerCase() !== "undefined" ? rawDetalle : "";
+      return {
+        id: d.id_detalle.toString(),
+        description: d.descripcion,
+        code: d.codigo,
+        qty: Number(d.cantidad),
+        unitPrice: Number(d.precio_unitario),
+        kind: d.tipo_item === "SERVICIO" ? "labor" : "part",
+        detalle: cleanDetalle,
+      };
+    });
 
     // Desestructurar observaciones JSON si aplica
     let extraData = { discount: 0, taxRate: 13, text: proforma.observaciones || "" };
@@ -307,22 +302,30 @@ router.post(
       }
       const idProforma = (proformaResult as any).insertId;
 
-      // 6. Guardar líneas de detalle
+      // 6. Guardar líneas de detalle y sus explicaciones débiles
       for (const line of validLines) {
-        // Encontrar o crear el item en la BD y guardar su detalle
         const idItem = await findOrCreateItem(
           connection,
           line.description,
           line.kind,
           Number(line.unitPrice) || 0,
-          line.code,
-          line.detalle
+          line.code
         );
 
-        await connection.query(
+        const [detResult] = await connection.query(
           "INSERT INTO detalles_proforma (id_proforma, id_item, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
           [idProforma, idItem, Number(line.qty) || 1, Number(line.unitPrice) || 0]
         );
+        const idDetalle = (detResult as any).insertId;
+
+        const rawDetalle = line.detalle !== null && line.detalle !== undefined ? String(line.detalle).trim() : "";
+        const cleanDetalle = rawDetalle.toLowerCase() !== "null" && rawDetalle.toLowerCase() !== "undefined" ? rawDetalle : "";
+        if (cleanDetalle.length > 0) {
+          await connection.query(
+            "INSERT INTO explicaciones_items (id_detalle, descripcion_detallada) VALUES (?, ?)",
+            [idDetalle, cleanDetalle]
+          );
+        }
       }
 
       await connection.commit();
@@ -428,7 +431,7 @@ router.put(
         }
       }
 
-      // 3. Eliminar detalles antiguos
+      // 3. Eliminar detalles antiguos (elimina en cascada explicaciones_items asociadas por id_detalle)
       await connection.query("DELETE FROM detalles_proforma WHERE id_proforma = ?", [id]);
 
       // 4. Insertar detalles nuevos
@@ -438,14 +441,23 @@ router.put(
           line.description,
           line.kind,
           Number(line.unitPrice) || 0,
-          line.code,
-          line.detalle
+          line.code
         );
 
-        await connection.query(
+        const [detResult] = await connection.query(
           "INSERT INTO detalles_proforma (id_proforma, id_item, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
           [id, idItem, Number(line.qty) || 1, Number(line.unitPrice) || 0]
         );
+        const idDetalle = (detResult as any).insertId;
+
+        const rawDetalle = line.detalle !== null && line.detalle !== undefined ? String(line.detalle).trim() : "";
+        const cleanDetalle = rawDetalle.toLowerCase() !== "null" && rawDetalle.toLowerCase() !== "undefined" ? rawDetalle : "";
+        if (cleanDetalle.length > 0) {
+          await connection.query(
+            "INSERT INTO explicaciones_items (id_detalle, descripcion_detallada) VALUES (?, ?)",
+            [idDetalle, cleanDetalle]
+          );
+        }
       }
 
       await connection.commit();

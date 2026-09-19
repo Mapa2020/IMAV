@@ -479,6 +479,7 @@ function Index() {
             ...l,
             qty: Number(l.qty) || 1,
             unitPrice: Number(l.unitPrice) || 0,
+            detalle: l.detalle && l.detalle.trim().toLowerCase() !== "null" ? l.detalle.trim() : "",
           })),
           discount: Number(data.discount) || 0,
           taxRate: data.taxRate,
@@ -670,15 +671,9 @@ function Index() {
               </div>
             </div>
 
-            <div
-              className={`grid gap-6 ${
-                step === 4
-                  ? "xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]"
-                  : "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
-              }`}
-            >
+            <div className="grid gap-6 lg:grid-cols-2">
               {/* Formulario */}
-              <section className="panel p-6 lg:p-7">
+              <section className="panel p-6 lg:p-7 min-w-0">
                 {step === 1 && (
                   <div className="space-y-6">
                     <div>
@@ -1123,17 +1118,23 @@ function Index() {
                     </div>
 
                     <div className="space-y-3 mt-4">
-                      <div className="hidden gap-3 px-1 sm:grid sm:grid-cols-[1fr_85px_120px_135px_44px]">
-                        <span className="label-caps text-xs font-bold">Descripción del Ítem / Servicio</span>
-                        <span className="label-caps text-xs font-bold text-right">
-                          Cant.
-                        </span>
-                        <span className="label-caps text-xs font-bold text-right">
-                          P. Unit.
-                        </span>
-                        <span className="label-caps text-xs font-bold">Tipo</span>
-                        <span />
-                      </div>
+                      {data.lines.length > 0 && (
+                        <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_56px_98px_110px_36px] gap-2 px-[13px] mb-1.5 text-muted-foreground font-semibold items-center">
+                          <span className="label-caps text-xs font-bold truncate">
+                            Descripción del Ítem / Servicio
+                          </span>
+                          <span className="label-caps text-xs font-bold text-center">
+                            Cant.
+                          </span>
+                          <span className="label-caps text-xs font-bold text-right pr-2">
+                            P. Unit.
+                          </span>
+                          <span className="label-caps text-xs font-bold pl-1">
+                            Tipo
+                          </span>
+                          <span />
+                        </div>
+                      )}
 
                       {data.lines.length === 0 && (
                         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -1147,7 +1148,7 @@ function Index() {
                           key={l.id}
                           className="p-3 rounded-lg border border-border/80 bg-surface-2/20 space-y-2.5"
                         >
-                          <div className="grid gap-2.5 sm:grid-cols-[1fr_85px_120px_135px_44px] sm:items-center">
+                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_56px_98px_110px_36px] sm:items-center">
                             <ItemAutocomplete
                               value={l.description}
                               token={token}
@@ -1170,12 +1171,13 @@ function Index() {
                                     );
                                     return;
                                   }
+                                  const cleanDetail = detalle && detalle.trim().toLowerCase() !== "null" ? detalle.trim() : (l.detalle && l.detalle.trim().toLowerCase() !== "null" ? l.detalle.trim() : "");
                                   updateLine(l.id, {
                                     description: desc,
                                     code: code,
                                     unitPrice: price > 0 ? price : "",
                                     kind: kind,
-                                    detalle: detalle || l.detalle || "",
+                                    detalle: cleanDetail,
                                     qty: l.qty && l.qty !== 1 ? l.qty : "",
                                   });
                                 } else {
@@ -1194,7 +1196,7 @@ function Index() {
                                   qty: val === "" ? "" : Number(val),
                                 });
                               }}
-                              className="text-right px-2 text-sm sm:text-base font-medium h-10"
+                              className="text-center px-1 text-sm sm:text-base font-medium h-10 w-full min-w-0"
                             />
                             <Input
                               type="number"
@@ -1211,7 +1213,7 @@ function Index() {
                                   unitPrice: val === "" ? "" : Number(val),
                                 });
                               }}
-                              className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10"
+                              className="text-right px-2 text-sm sm:text-base font-medium font-mono h-10 w-full min-w-0"
                             />
                             <Select
                               value={l.kind}
@@ -1219,14 +1221,16 @@ function Index() {
                                 updateLine(l.id, { kind: val })
                               }
                             >
-                              <SelectTrigger className="h-10 text-sm">
+                              <SelectTrigger className="h-10 text-xs sm:text-sm px-2 w-full min-w-0">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="labor" className="text-sm">
                                   Servicio
                                 </SelectItem>
-                                <SelectItem value="part" className="text-sm">Repuesto</SelectItem>
+                                <SelectItem value="part" className="text-sm">
+                                  Repuesto
+                                </SelectItem>
                               </SelectContent>
                             </Select>
 
@@ -1234,20 +1238,20 @@ function Index() {
                               variant="ghost"
                               size="icon"
                               onClick={() => removeLine(l.id)}
-                              className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-10"
+                              className="text-destructive hover:bg-destructive/10 shrink-0 mx-auto h-10 w-9 sm:w-full flex items-center justify-center"
                               title="Eliminar ítem"
                             >
-                              <Trash2 className="size-5" />
+                              <Trash2 className="size-4 sm:size-5" />
                             </Button>
                           </div>
 
                           {/* Campo para Explicación del item seleccionado */}
-                          <div className="flex items-center gap-2 pl-1 pt-1.5 border-t border-border/40">
-                            <span className="text-xs font-semibold text-foreground/80 shrink-0">
+                          <div className="flex items-center gap-2.5 pt-2 border-t border-border/40">
+                            <span className="label-caps text-xs font-bold text-muted-foreground shrink-0">
                               Explicación:
                             </span>
                             <Input
-                              value={l.detalle || ""}
+                              value={l.detalle && l.detalle.trim().toLowerCase() !== "null" ? l.detalle : ""}
                               onChange={(e) =>
                                 updateLine(l.id, { detalle: e.target.value })
                               }
@@ -1271,26 +1275,31 @@ function Index() {
                     </div>
 
                     <div className="border-t border-border pt-5">
-                      <div className="max-w-xs">
-                        <Label className="label-caps">Descuento (Bs.)</Label>
-                        <Input
-                          type="number"
-                          value={
-                            data.discount === 0 || data.discount === ""
-                              ? ""
-                              : data.discount
-                          }
-                          placeholder="0.00"
-                          onChange={(e) =>
-                            set(
-                              "discount",
-                              e.target.value === ""
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label className="label-caps text-xs font-bold">
+                            Descuento (Bs.)
+                          </Label>
+                          <Input
+                            type="number"
+                            step="any"
+                            value={
+                              data.discount === 0 || data.discount === ""
                                 ? ""
-                                : Number(e.target.value),
-                            )
-                          }
-                          className="font-mono mt-2"
-                        />
+                                : data.discount
+                            }
+                            placeholder=""
+                            onChange={(e) =>
+                              set(
+                                "discount",
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value),
+                              )
+                            }
+                            className="font-mono mt-2 h-10 text-sm sm:text-base font-medium"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1323,7 +1332,7 @@ function Index() {
               </section>
 
               {/* Vista previa en tiempo real */}
-              <section className="xl:sticky xl:top-24 xl:self-start">
+              <section className="lg:sticky lg:top-24 lg:self-start min-w-0 w-full">
                 <div className="mb-3 px-1">
                   <p className="label-caps text-xs">
                     Vista previa del documento en tiempo real
