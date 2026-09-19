@@ -42,12 +42,18 @@ echo [OK] Docker Desktop activo y listo.
 echo.
 
 :: 2. Iniciar sesión en Docker
-echo [2/5] Comprobando inicio de sesión en Docker Hub...
-docker login
-if %errorlevel% neq 0 (
-    echo [ERROR] No se pudo autenticar en Docker Hub.
-    pause
-    exit /b 1
+echo [2/5] Comprobando sesión de Docker Hub...
+set "DO_LOGIN=n"
+set /p DO_LOGIN="¿Deseas iniciar sesión o cambiar de usuario en Docker Hub? (s/N): "
+if /i "%DO_LOGIN%"=="s" (
+    docker login -u %DOCKER_USER%
+    if %errorlevel% neq 0 (
+        echo [ERROR] No se pudo autenticar en Docker Hub.
+        pause
+        exit /b 1
+    )
+) else (
+    echo Usando la sesión actual activa de Docker Desktop.
 )
 
 :: 3. Construir imágenes locales
