@@ -61,7 +61,7 @@ if %errorlevel% neq 0 (
 :: 4. Aplicar actualización a los contenedores
 echo.
 echo [3/4] Recreando contenedores con la nueva versión...
-docker compose -f %COMPOSE_FILE% up -d --remove-orphans
+docker compose -f %COMPOSE_FILE% up -d --force-recreate --remove-orphans
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] No se pudieron aplicar las actualizaciones a los contenedores.
@@ -77,12 +77,16 @@ echo =======================================================
 echo  ¡SISTEMA IMAV MOTORS ACTUALIZADO CON ÉXITO!
 echo =======================================================
 echo.
-echo  - Las imágenes más recientes se han aplicado de inmediato.
+echo  - Las imágenes más recientes se han aplicado con recreación forzada.
 echo  - Toda la información de clientes, vehículos, proformas,
 echo    inventario e informes técnicos se mantiene 100%% INTACTA.
 echo.
 echo  El sistema se encuentra en ejecución en:
 echo  http://localhost:5173
+echo.
+echo  [IMPORTANTE] Si ya tenías la página abierta en tu navegador,
+echo  presiona Ctrl + F5 (o Ctrl + Shift + R) para limpiar la
+echo  memoria caché y ver los nuevos cambios reflejados al instante.
 echo =======================================================
 echo.
 pause

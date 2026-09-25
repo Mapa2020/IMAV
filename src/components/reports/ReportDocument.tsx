@@ -200,6 +200,13 @@ export function ReportDocument({ report }: { report: TechnicalReport }) {
           <style
             dangerouslySetInnerHTML={{
               __html: `
+        .report-table-wrapper .font-mono,
+        .report-table .font-mono {
+          font-family: var(--font-sans), "DM Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          font-variant-numeric: tabular-nums lining-nums !important;
+          font-feature-settings: "tnum" 1, "lnum" 1, "zero" 0 !important;
+          letter-spacing: -0.01em;
+        }
         @media screen {
           .report-table {
             display: flex !important;

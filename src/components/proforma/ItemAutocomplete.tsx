@@ -118,7 +118,7 @@ export function ItemAutocomplete({
           onClick={() => setIsOpen(!isOpen)}
           placeholder={placeholder}
           title={value}
-          className="w-full pr-10 text-sm sm:text-base font-medium cursor-pointer select-none bg-transparent hover:bg-slate-50/10 transition-colors h-10"
+          className="w-full pr-10 text-sm sm:text-base font-medium cursor-pointer select-none h-10"
         />
         <button
           type="button"
@@ -132,50 +132,50 @@ export function ItemAutocomplete({
         </button>
       </div>
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full min-w-[320px] rounded-md border border-slate-200 bg-white shadow-xl max-h-80 flex flex-col">
-          <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+        <div className="absolute z-50 mt-1 w-full min-w-[320px] rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl max-h-80 flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
+          <div className="p-2 border-b border-border bg-surface/90 sticky top-0 z-10 backdrop-blur-sm">
             <Input
               ref={searchInputRef}
               type="text"
               placeholder="Buscar por descripción o código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-sm h-9 text-slate-900 bg-white placeholder:text-slate-400 border border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300"
+              className="w-full text-sm h-9 text-foreground bg-slate-950 placeholder:text-muted-foreground/80 border-amber-500/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-slate-950 focus-visible:text-foreground"
             />
           </div>
           <div className="overflow-y-auto flex-1 max-h-72">
             {isLoading ? (
-              <p className="p-3 text-sm text-center text-slate-500 animate-pulse">
+              <p className="p-3 text-sm text-center text-muted-foreground animate-pulse">
                 Buscando ítems...
               </p>
             ) : suggestions.length === 0 ? (
-              <p className="p-3 text-sm text-center text-slate-500">
+              <p className="p-3 text-sm text-center text-muted-foreground">
                 No se encontraron ítems
               </p>
             ) : (
-              <ul className="p-1">
+              <ul className="p-1 space-y-0.5">
                 {suggestions.map((item) => (
                   <li key={item.id_item}>
                     <button
                       type="button"
                       onClick={() => handleSelect(item)}
-                      className="w-full rounded px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center justify-between transition-colors"
+                      className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent/60 flex items-center justify-between transition-colors group cursor-pointer"
                     >
                       <div className="text-left flex-1 min-w-0 pr-3">
-                        <p className="font-semibold text-slate-900 text-sm sm:text-base leading-snug whitespace-normal break-words">
+                        <p className="font-semibold text-foreground text-sm sm:text-base leading-snug whitespace-normal break-words group-hover:text-primary transition-colors">
                           {item.descripcion}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-slate-500 font-mono">
+                          <span className="text-xs text-muted-foreground font-mono">
                             Código: {item.codigo}
                           </span>
                         </div>
                       </div>
                       <div className="text-right shrink-0 ml-2">
-                        <p className="font-semibold font-mono text-amber-600 text-sm sm:text-base">
+                        <p className="font-semibold font-mono text-primary text-sm sm:text-base">
                           Bs {Number(item.precio || 0).toFixed(2)}
                         </p>
-                        <span className="inline-block rounded-sm bg-slate-100 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-slate-600 font-bold mt-0.5">
+                        <span className="inline-block rounded-sm bg-surface-2 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-bold mt-0.5 border border-border/50">
                           {item.tipo_item === "SERVICIO"
                             ? "Servicio"
                             : "Repuesto"}

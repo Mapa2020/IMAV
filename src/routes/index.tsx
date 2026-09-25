@@ -1256,7 +1256,7 @@ function Index() {
                                 updateLine(l.id, { detalle: e.target.value })
                               }
                               placeholder="Explicación o mayor detalle del ítem (opcional)..."
-                              className="h-9 text-sm bg-background/50 text-foreground placeholder:text-muted-foreground/60"
+                              className="h-9 text-sm"
                             />
                           </div>
                         </div>

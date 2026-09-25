@@ -220,6 +220,13 @@ export function ProformaDocument({
         <style
           dangerouslySetInnerHTML={{
             __html: `
+        .proforma-document-container .font-mono,
+        .proforma-page-sheet .font-mono {
+          font-family: var(--font-sans), "DM Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          font-variant-numeric: tabular-nums lining-nums !important;
+          font-feature-settings: "tnum" 1, "lnum" 1, "zero" 0 !important;
+          letter-spacing: -0.01em;
+        }
         @media screen {
           .proforma-page-sheet {
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);

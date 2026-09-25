@@ -131,10 +131,25 @@ export async function dbInitAndSeed() {
 
     // Asegurar que en detalles_proforma la columna cantidad permita decimales (por ej. 2.5 litros de aceite)
     try {
-      await connection.query("ALTER TABLE detalles_proforma MODIFY COLUMN cantidad DECIMAL(10,2) NOT NULL");
-      console.log("Columna cantidad de detalles_proforma verificada para permitir decimales (DECIMAL(10,2)).");
+      const [colInfo]: any = await connection.query(
+        "SELECT DATA_TYPE, NUMERIC_SCALE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'detalles_proforma' AND COLUMN_NAME = 'cantidad'"
+      );
+      if (colInfo && colInfo.length > 0 && (colInfo[0].DATA_TYPE.toLowerCase() !== "decimal" || colInfo[0].NUMERIC_SCALE === 0)) {
+        console.log("Migrando columna cantidad a DECIMAL(10,2) en detalles_proforma...");
+        const [subCol]: any = await connection.query(
+          "SHOW COLUMNS FROM detalles_proforma LIKE 'subtotal'"
+        );
+        if (subCol && subCol.length > 0) {
+          await connection.query("ALTER TABLE detalles_proforma DROP COLUMN subtotal");
+        }
+        await connection.query("ALTER TABLE detalles_proforma MODIFY COLUMN cantidad DECIMAL(10,2) NOT NULL");
+        await connection.query("ALTER TABLE detalles_proforma ADD COLUMN subtotal DECIMAL(10,2) GENERATED ALWAYS AS ((cantidad * precio_unitario)) STORED");
+        console.log("Columna cantidad migrada exitosamente a DECIMAL(10,2).");
+      } else {
+        console.log("Columna cantidad de detalles_proforma verificada para permitir decimales (DECIMAL(10,2)).");
+      }
     } catch (dpErr: any) {
-      console.warn("No se pudo ejecutar ALTER TABLE para detalles_proforma.cantidad:", dpErr.message);
+      console.warn("No se pudo ejecutar migración para detalles_proforma.cantidad:", dpErr.message);
     }
 
     // Asegurar que en vehiculos las columnas placa, marca y modelo permitan NULL (para montacargas, maquinaria, etc.)
